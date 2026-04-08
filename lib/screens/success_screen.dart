@@ -7,7 +7,10 @@ import 'home_screen.dart';
 class SuccessScreen extends StatelessWidget {
   final LoanApplication application;
 
-  const SuccessScreen({Key? key, required this.application}) : super(key: key);
+  const SuccessScreen({
+    super.key,
+    required this.application,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -18,11 +21,11 @@ class SuccessScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // ✅ Success Animation
-              TweenAnimationBuilder(
+              // Success Animation
+              TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 800),
                 tween: Tween<double>(begin: 0, end: 1),
-                builder: (context, double value, child) {
+                builder: (context, double value, Widget? child) {
                   return Transform.scale(
                     scale: value,
                     child: Container(
@@ -73,7 +76,7 @@ class SuccessScreen extends StatelessWidget {
 
               const SizedBox(height: 40),
 
-              // ✅ Info Card
+              // Info Card
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
@@ -96,7 +99,7 @@ class SuccessScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'What\'s Next?',
+                      "What's Next?",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -122,7 +125,7 @@ class SuccessScreen extends StatelessWidget {
 
               const SizedBox(height: 40),
 
-              // ✅ Button
+              // Button
               CustomButton(
                 text: 'Back to Home',
                 icon: Icons.home,
