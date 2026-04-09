@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/dashboard/home_screen.dart';
 import 'screens/dashboard/admin_dashboard_screen.dart';
 import 'screens/auth/login_screen.dart'; // ← Add this import
 import 'utils/constants.dart';
@@ -41,7 +40,6 @@ class MyApp extends StatelessWidget {
 
       routes: {
         '/login': (context) => const LoginScreen(), // ← First Screen
-        '/': (context) => const HomeScreen(), // ← User Home
         '/admin': (context) => const AdminDashboardScreen(), // ← Admin Home
       },
     );

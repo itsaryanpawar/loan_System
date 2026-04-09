@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../models/loan_application.dart';
 import '../../services/api_service.dart';
 import '../../utils/constants.dart';
@@ -24,10 +23,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Future<void> _loadApplications() async {
     setState(() => _isLoading = true);
+
     final applications = await _apiService.getAllApplications();
 
-    // ✅ Fix 1: Check mounted after async gap
-    if (!mounted) return;
+    if (!mounted) return; // ✅ FIX
 
     setState(() {
       _applications = applications;
@@ -39,6 +38,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget build(BuildContext context) {
     final approvedCount =
         _applications.where((app) => app.isApproved == true).length;
+
     final pendingCount =
         _applications.where((app) => app.isApproved == false).length;
 
@@ -69,8 +69,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 child: const Text('Clear All Data'),
                 onTap: () async {
                   await Future.delayed(Duration.zero);
-                  // ✅ Fix 2: Check mounted before using context
-                  if (!mounted) return;
+
+                  if (!mounted) return; // ✅ FIX
+
                   _showClearDataDialog();
                 },
               ),
@@ -157,7 +158,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       if (_applications.isEmpty)
                         Center(
                           child: Padding(
-                            padding: const EdgeInsets.all(40.0),
+                            padding: const EdgeInsets.all(40),
                             child: Column(
                               children: [
                                 Icon(
@@ -183,9 +184,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _applications.length,
                           itemBuilder: (context, index) {
-                            return _buildApplicationCard(
-                              _applications[index],
-                            );
+                            return _buildApplicationCard(_applications[index]);
                           },
                         ),
                     ],
@@ -197,11 +196,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+      String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -253,96 +248,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           color: isApproved
               ? AppColors.success.withValues(alpha: 0.3)
               : AppColors.warning.withValues(alpha: 0.3),
-          width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: ExpansionTile(
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: (isApproved ? AppColors.success : AppColors.warning)
-                .withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            AppConstants.loanIcons[app.loanType],
-            color: isApproved ? AppColors.success : AppColors.warning,
-          ),
-        ),
-        title: Text(
-          app.name ?? 'N/A',
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Text(
-          app.loanType ?? 'N/A',
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-          ),
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: (isApproved ? AppColors.success : AppColors.warning)
-                .withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            isApproved ? 'Approved' : 'Review',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: isApproved ? AppColors.success : AppColors.warning,
-            ),
-          ),
-        ),
+        title: Text(app.name ?? 'N/A'),
+        subtitle: Text(app.loanType ?? 'N/A'),
         children: [
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _buildDetailRow(
-                  Icons.phone,
-                  'Phone',
-                  app.phoneNumber ?? 'N/A',
-                ),
-                const SizedBox(height: 12),
-                _buildDetailRow(
-                  Icons.location_city,
-                  'City',
-                  app.city ?? 'N/A',
-                ),
-                const SizedBox(height: 12),
-                _buildDetailRow(
-                  Icons.currency_rupee,
-                  'Monthly Income',
-                  '₹${app.monthlyIncome ?? 'N/A'}',
-                ),
-                const SizedBox(height: 12),
-                _buildDetailRow(
-                  Icons.work,
-                  'Employment',
-                  app.employmentType ?? 'N/A',
-                ),
-                const SizedBox(height: 12),
-                _buildDetailRow(
-                  Icons.calendar_today,
-                  'Applied On',
-                  app.createdAt != null
-                      ? DateFormat('MMM dd, yyyy • hh:mm a')
-                          .format(app.createdAt!)
-                      : 'N/A',
-                ),
+                _buildDetailRow(Icons.phone, 'Phone', app.phoneNumber ?? 'N/A'),
               ],
             ),
           ),
@@ -354,34 +270,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.textSecondary),
+        Icon(icon, size: 18),
         const SizedBox(width: 12),
-        Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
+        Text('$label: $value'),
       ],
     );
   }
 
   int _getTodayCount() {
     final today = DateTime.now();
+
     return _applications.where((app) {
       if (app.createdAt == null) return false;
+
       return app.createdAt!.year == today.year &&
           app.createdAt!.month == today.month &&
           app.createdAt!.day == today.day;
@@ -393,12 +294,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Clear All Data?'),
-        content: const Text(
-          'This will permanently delete all loan applications.',
-        ),
+        content: const Text('This will delete all applications'),
         actions: [
           TextButton(
-            // ✅ Fix 3: Use dialogContext instead of outer context
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
@@ -406,13 +304,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             onPressed: () async {
               await _apiService.clearAllApplications();
 
-              // ✅ Fix 4: Check mounted before using context after await
-              if (!mounted) return;
+              if (!mounted) return; // ✅ FIX
 
-              // ✅ Fix 5: Use dialogContext to pop dialog safely
               Navigator.pop(dialogContext);
 
-              // ✅ Fix 6: Reload after dialog closes
               _loadApplications();
             },
             child: const Text(

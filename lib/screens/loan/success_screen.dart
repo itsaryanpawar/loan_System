@@ -130,10 +130,13 @@ class SuccessScreen extends StatelessWidget {
                 text: 'Back to Home',
                 icon: Icons.home,
                 onPressed: () {
+                  // ✅ AFTER (pass userName)
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const HomeScreen(),
+                      builder: (context) => HomeScreen(
+                        userName: '', // ← Add this (empty or pass actual name)
+                      ),
                     ),
                     (route) => false,
                   );

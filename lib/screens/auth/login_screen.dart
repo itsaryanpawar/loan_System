@@ -1,7 +1,9 @@
+// lib/screens/auth/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../utils/constants.dart';
+import '../dashboard/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -27,70 +29,83 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // ─── LOGIN FUNCTION ───
+  // ✅ Fix 3a - use_build_context_synchronously
+  // Always check mounted before using context after async
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return; // ✅ Check mounted first
+
       setState(() => _isLoading = false);
 
-      if (mounted) {
-        if (_selectedRole == 'admin') {
-          Navigator.pushReplacementNamed(context, '/admin');
-        } else {
-          Navigator.pushReplacementNamed(context, '/');
-        }
+      if (_selectedRole == 'admin') {
+        Navigator.pushReplacementNamed(context, '/admin');
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(
+              userName: _emailController.text.trim(),
+            ),
+          ),
+        );
       }
     }
   }
 
-  // ─── GOOGLE LOGIN ───
+  // ✅ Fix 3b - use_build_context_synchronously in Google Login
   void _handleGoogleLogin() async {
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return; // ✅ Check mounted
+
     setState(() => _isLoading = false);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Google Login Coming Soon!'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      // TODO: Add Firebase Google Sign In
-      // Navigator.pushReplacementNamed(context, '/');
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Google Login Coming Soon!'),
+        backgroundColor: Colors.orange,
+      ),
+    );
   }
 
-  // ─── APPLE LOGIN ───
+  // ✅ Fix 3c - use_build_context_synchronously in Apple Login
   void _handleAppleLogin() async {
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return; // ✅ Check mounted
+
     setState(() => _isLoading = false);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Apple Login Coming Soon!'),
-          backgroundColor: Colors.black,
-        ),
-      );
-      // TODO: Add Apple Sign In
-      // Navigator.pushReplacementNamed(context, '/');
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Apple Login Coming Soon!'),
+        backgroundColor: Colors.black,
+      ),
+    );
   }
 
-  // ─── OPEN REGISTER BOTTOM SHEET ───
   void _openRegisterSheet() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // ← Full height
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const RegisterBottomSheet(),
     ).then((result) {
-      // After Register → Go to Home
-      if (result == true) {
-        Navigator.pushReplacementNamed(context, '/');
+      if (result == true && mounted) {
+        // ✅ Check mounted
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomeScreen(
+              userName: '', // Pass name from register sheet if available
+            ),
+          ),
+        );
       }
     });
   }
@@ -115,9 +130,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // HEADER
-  // ─────────────────────────────────────────
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -128,7 +140,8 @@ class _LoginScreenState extends State<LoginScreen> {
           end: Alignment.bottomRight,
           colors: [
             AppColors.primary,
-            AppColors.primary.withOpacity(0.7),
+            AppColors.primary
+                .withValues(alpha: 0.7), // ✅ withValues not withOpacity
           ],
         ),
         borderRadius: const BorderRadius.only(
@@ -142,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2), // ✅ withValues
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -166,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
             'Instant Loan Approval',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.85),
+              color: Colors.white.withValues(alpha: 0.85), // ✅ withValues
             ),
           ),
         ],
@@ -174,9 +187,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // LOGIN CARD
-  // ─────────────────────────────────────────
   Widget _buildLoginCard() {
     return Container(
       padding: const EdgeInsets.all(28),
@@ -185,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
+            color: Colors.grey.withValues(alpha: 0.15), // ✅ withValues
             spreadRadius: 5,
             blurRadius: 20,
             offset: const Offset(0, 5),
@@ -213,42 +223,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 color: Colors.grey.shade500,
               ),
             ),
-
             const SizedBox(height: 20),
-
-            // Role Selector
             _buildRoleSelector(),
             const SizedBox(height: 20),
-
-            // Email
             _buildLabel('Email Address'),
             const SizedBox(height: 8),
             _buildEmailField(),
             const SizedBox(height: 16),
-
-            // Password
             _buildLabel('Password'),
             const SizedBox(height: 8),
             _buildPasswordField(),
             const SizedBox(height: 12),
-
-            // Remember & Forgot
             _buildRememberAndForgot(),
             const SizedBox(height: 24),
-
-            // Login Button
             _buildLoginButton(),
             const SizedBox(height: 20),
-
-            // ─── OR DIVIDER ───
             _buildDivider(),
             const SizedBox(height: 20),
-
-            // ─── SOCIAL LOGIN BUTTONS ───
             _buildSocialLoginButtons(),
             const SizedBox(height: 20),
-
-            // ─── REGISTER LINK ───
             _buildRegisterLink(),
           ],
         ),
@@ -256,9 +249,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // ROLE SELECTOR
-  // ─────────────────────────────────────────
   Widget _buildRoleSelector() {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -268,7 +258,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       child: Row(
         children: [
-          // User
           Expanded(
             child: GestureDetector(
               onTap: () => setState(() => _selectedRole = 'user'),
@@ -306,8 +295,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-
-          // Admin
           Expanded(
             child: GestureDetector(
               onTap: () => setState(() => _selectedRole = 'admin'),
@@ -350,9 +337,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // LABEL
-  // ─────────────────────────────────────────
   Widget _buildLabel(String text) {
     return Text(
       text,
@@ -364,43 +348,62 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // EMAIL FIELD
-  // ─────────────────────────────────────────
+  InputDecoration _inputDecoration({
+    required String hint,
+    required IconData prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: GoogleFonts.inter(
+        color: Colors.grey.shade400,
+      ),
+      prefixIcon: Icon(prefixIcon, color: AppColors.primary),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: AppColors.background,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: Colors.grey.shade200,
+          width: 1.5,
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: AppColors.primary,
+          width: 1.5,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+    );
+  }
+
   Widget _buildEmailField() {
     return TextFormField(
       controller: _emailController,
       keyboardType: TextInputType.emailAddress,
       style: GoogleFonts.inter(fontSize: 15),
-      decoration: InputDecoration(
-        hintText: 'Enter your email',
-        hintStyle: GoogleFonts.inter(color: Colors.grey.shade400),
-        prefixIcon: Icon(Icons.email_outlined, color: AppColors.primary),
-        filled: true,
-        fillColor: AppColors.background,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
+      decoration: _inputDecoration(
+        hint: 'Enter your email',
+        prefixIcon: Icons.email_outlined,
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) return 'Please enter your email';
+        if (value == null || value.isEmpty) {
+          return 'Please enter your email';
+        }
         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
           return 'Please enter a valid email';
         }
@@ -409,18 +412,14 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // PASSWORD FIELD
-  // ─────────────────────────────────────────
   Widget _buildPasswordField() {
     return TextFormField(
       controller: _passwordController,
       obscureText: !_isPasswordVisible,
       style: GoogleFonts.inter(fontSize: 15),
-      decoration: InputDecoration(
-        hintText: 'Enter your password',
-        hintStyle: GoogleFonts.inter(color: Colors.grey.shade400),
-        prefixIcon: Icon(Icons.lock_outline, color: AppColors.primary),
+      decoration: _inputDecoration(
+        hint: 'Enter your password',
+        prefixIcon: Icons.lock_outline,
         suffixIcon: IconButton(
           icon: Icon(
             _isPasswordVisible
@@ -431,40 +430,19 @@ class _LoginScreenState extends State<LoginScreen> {
           onPressed: () =>
               setState(() => _isPasswordVisible = !_isPasswordVisible),
         ),
-        filled: true,
-        fillColor: AppColors.background,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5),
-        ),
       ),
       validator: (value) {
-        if (value == null || value.isEmpty) return 'Please enter your password';
-        if (value.length < 6) return 'Password must be at least 6 characters';
+        if (value == null || value.isEmpty) {
+          return 'Please enter your password';
+        }
+        if (value.length < 6) {
+          return 'Password must be at least 6 characters';
+        }
         return null;
       },
     );
   }
 
-  // ─────────────────────────────────────────
-  // REMEMBER ME & FORGOT PASSWORD
-  // ─────────────────────────────────────────
   Widget _buildRememberAndForgot() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -508,9 +486,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // LOGIN BUTTON
-  // ─────────────────────────────────────────
   Widget _buildLoginButton() {
     return SizedBox(
       width: double.infinity,
@@ -519,12 +494,13 @@ class _LoginScreenState extends State<LoginScreen> {
         onPressed: _isLoading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+          disabledBackgroundColor:
+              AppColors.primary.withValues(alpha: 0.6), // ✅ withValues
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
           elevation: 3,
-          shadowColor: AppColors.primary.withOpacity(0.4),
+          shadowColor: AppColors.primary.withValues(alpha: 0.4), // ✅ withValues
         ),
         child: _isLoading
             ? const SizedBox(
@@ -548,13 +524,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // DIVIDER
-  // ─────────────────────────────────────────
   Widget _buildDivider() {
     return Row(
       children: [
-        Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+        Expanded(
+          child: Divider(color: Colors.grey.shade300, thickness: 1),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
@@ -567,18 +542,17 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-        Expanded(child: Divider(color: Colors.grey.shade300, thickness: 1)),
+        Expanded(
+          child: Divider(color: Colors.grey.shade300, thickness: 1),
+        ),
       ],
     );
   }
 
-  // ─────────────────────────────────────────
-  // SOCIAL LOGIN BUTTONS ← NEW
-  // ─────────────────────────────────────────
   Widget _buildSocialLoginButtons() {
     return Row(
       children: [
-        // ── GOOGLE BUTTON ──
+        // ── GOOGLE ──
         Expanded(
           child: GestureDetector(
             onTap: _handleGoogleLogin,
@@ -593,7 +567,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.08),
+                    color: Colors.grey.withValues(alpha: 0.08), // ✅ withValues
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -602,11 +576,10 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Official Google Icon
                   const FaIcon(
                     FontAwesomeIcons.google,
                     size: 20,
-                    color: Color(0xFFDB4437), // Google Red
+                    color: Color(0xFFDB4437),
                   ),
                   const SizedBox(width: 10),
                   Text(
@@ -625,18 +598,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
         const SizedBox(width: 16),
 
-        // ── APPLE BUTTON ──
+        // ── APPLE ──
         Expanded(
           child: GestureDetector(
             onTap: _handleAppleLogin,
             child: Container(
               height: 54,
               decoration: BoxDecoration(
-                color: Colors.black, // Apple Black
+                color: Colors.black,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2), // ✅ withValues
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -645,11 +618,10 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Official Apple Icon
                   const FaIcon(
                     FontAwesomeIcons.apple,
                     size: 22,
-                    color: Colors.white, // Apple White
+                    color: Colors.white,
                   ),
                   const SizedBox(width: 10),
                   Text(
@@ -669,9 +641,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // REGISTER LINK ← UPDATED
-  // ─────────────────────────────────────────
   Widget _buildRegisterLink() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -684,7 +653,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
         GestureDetector(
-          // ✅ Opens Register Bottom Sheet
           onTap: _openRegisterSheet,
           child: Text(
             'Register Now',
@@ -700,9 +668,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  REGISTER BOTTOM SHEET WIDGET ← NEW
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// REGISTER BOTTOM SHEET
+// ═══════════════════════════════════════
 class RegisterBottomSheet extends StatefulWidget {
   const RegisterBottomSheet({Key? key}) : super(key: key);
 
@@ -716,7 +684,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+  final _confirmController = TextEditingController();
 
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
@@ -729,11 +697,10 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
     _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _confirmController.dispose();
     super.dispose();
   }
 
-  // ─── REGISTER FUNCTION ───
   void _handleRegister() async {
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -748,27 +715,25 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return; // ✅ Fix use_build_context_synchronously
+
       setState(() => _isLoading = false);
 
-      if (mounted) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account Created Successfully! 🎉'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account Created Successfully! 🎉'),
+          backgroundColor: Colors.green,
+        ),
+      );
 
-        // Close bottom sheet and go to home
-        Navigator.pop(context, true); // ← true = success
-      }
+      Navigator.pop(context, _nameController.text.trim()); // ✅ Return name
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      // ─── BOTTOM SHEET CONTAINER ───
       height: MediaQuery.of(context).size.height * 0.92,
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -779,10 +744,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
       ),
       child: Column(
         children: [
-          // ─── DRAG HANDLE ───
           _buildDragHandle(),
-
-          // ─── SCROLLABLE CONTENT ───
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.only(
@@ -796,49 +758,127 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title
-                    _buildSheetTitle(),
+                    _buildTitle(),
                     const SizedBox(height: 24),
-
-                    // Full Name
                     _buildLabel('Full Name'),
                     const SizedBox(height: 8),
-                    _buildNameField(),
+                    _buildField(
+                      controller: _nameController,
+                      hint: 'Enter your full name',
+                      icon: Icons.person_outline,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'Please enter your name';
+                        }
+                        if (v.length < 3) {
+                          return 'Name must be at least 3 characters';
+                        }
+                        return null;
+                      },
+                    ),
                     const SizedBox(height: 16),
-
-                    // Email
                     _buildLabel('Email Address'),
                     const SizedBox(height: 8),
-                    _buildEmailField(),
+                    _buildField(
+                      controller: _emailController,
+                      hint: 'Enter your email',
+                      icon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                            .hasMatch(v)) {
+                          return 'Enter a valid email';
+                        }
+                        return null;
+                      },
+                    ),
                     const SizedBox(height: 16),
-
-                    // Phone
                     _buildLabel('Phone Number'),
                     const SizedBox(height: 8),
-                    _buildPhoneField(),
+                    _buildField(
+                      controller: _phoneController,
+                      hint: 'e.g. 03001234567',
+                      icon: Icons.phone_outlined,
+                      keyboardType: TextInputType.phone,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'Please enter your phone';
+                        }
+                        if (v.length < 10) {
+                          return 'Enter a valid phone number';
+                        }
+                        return null;
+                      },
+                    ),
                     const SizedBox(height: 16),
-
-                    // Password
                     _buildLabel('Password'),
                     const SizedBox(height: 8),
-                    _buildPasswordField(),
+                    _buildField(
+                      controller: _passwordController,
+                      hint: 'Create a password',
+                      icon: Icons.lock_outline,
+                      obscureText: !_isPasswordVisible,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isPasswordVisible
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: Colors.grey.shade500,
+                          size: 20,
+                        ),
+                        onPressed: () => setState(
+                          () => _isPasswordVisible = !_isPasswordVisible,
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'Please enter a password';
+                        }
+                        if (v.length < 6) {
+                          return 'Password must be at least 6 characters';
+                        }
+                        return null;
+                      },
+                    ),
                     const SizedBox(height: 16),
-
-                    // Confirm Password
                     _buildLabel('Confirm Password'),
                     const SizedBox(height: 8),
-                    _buildConfirmPasswordField(),
+                    _buildField(
+                      controller: _confirmController,
+                      hint: 'Confirm your password',
+                      icon: Icons.lock_outline,
+                      obscureText: !_isConfirmPasswordVisible,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isConfirmPasswordVisible
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          color: Colors.grey.shade500,
+                          size: 20,
+                        ),
+                        onPressed: () => setState(
+                          () => _isConfirmPasswordVisible =
+                              !_isConfirmPasswordVisible,
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return 'Please confirm your password';
+                        }
+                        if (v != _passwordController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
                     const SizedBox(height: 20),
-
-                    // Terms & Conditions
                     _buildTermsCheckbox(),
                     const SizedBox(height: 24),
-
-                    // Register Button
                     _buildRegisterButton(),
                     const SizedBox(height: 16),
-
-                    // Already have account
                     _buildLoginLink(),
                   ],
                 ),
@@ -850,9 +890,6 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // DRAG HANDLE
-  // ─────────────────────────────────────────
   Widget _buildDragHandle() {
     return Column(
       children: [
@@ -870,10 +907,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // SHEET TITLE
-  // ─────────────────────────────────────────
-  Widget _buildSheetTitle() {
+  Widget _buildTitle() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -898,7 +932,6 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
             ),
           ],
         ),
-        // Close Button
         GestureDetector(
           onTap: () => Navigator.pop(context),
           child: Container(
@@ -907,20 +940,13 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
               color: Colors.grey.shade100,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.close,
-              size: 20,
-              color: Colors.grey,
-            ),
+            child: const Icon(Icons.close, size: 20, color: Colors.grey),
           ),
         ),
       ],
     );
   }
 
-  // ─────────────────────────────────────────
-  // LABEL
-  // ─────────────────────────────────────────
   Widget _buildLabel(String text) {
     return Text(
       text,
@@ -932,172 +958,66 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // FIELD DECORATION HELPER
-  // ─────────────────────────────────────────
-  InputDecoration _fieldDecoration({
+  // ✅ Single reusable field builder
+  Widget _buildField({
+    required TextEditingController controller,
     required String hint,
     required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscureText = false,
     Widget? suffixIcon,
+    String? Function(String?)? validator,
   }) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: GoogleFonts.inter(color: Colors.grey.shade400, fontSize: 14),
-      prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: const Color(0xFFF5F7FA),
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Colors.red, width: 1.5),
-      ),
-    );
-  }
-
-  // ─────────────────────────────────────────
-  // NAME FIELD
-  // ─────────────────────────────────────────
-  Widget _buildNameField() {
     return TextFormField(
-      controller: _nameController,
+      controller: controller,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
       style: GoogleFonts.inter(fontSize: 14),
-      decoration: _fieldDecoration(
-        hint: 'Enter your full name',
-        icon: Icons.person_outline,
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) return 'Please enter your name';
-        if (value.length < 3) return 'Name must be at least 3 characters';
-        return null;
-      },
-    );
-  }
-
-  // ─────────────────────────────────────────
-  // EMAIL FIELD
-  // ─────────────────────────────────────────
-  Widget _buildEmailField() {
-    return TextFormField(
-      controller: _emailController,
-      keyboardType: TextInputType.emailAddress,
-      style: GoogleFonts.inter(fontSize: 14),
-      decoration: _fieldDecoration(
-        hint: 'Enter your email',
-        icon: Icons.email_outlined,
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) return 'Please enter your email';
-        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-          return 'Please enter a valid email';
-        }
-        return null;
-      },
-    );
-  }
-
-  // ─────────────────────────────────────────
-  // PHONE FIELD
-  // ─────────────────────────────────────────
-  Widget _buildPhoneField() {
-    return TextFormField(
-      controller: _phoneController,
-      keyboardType: TextInputType.phone,
-      style: GoogleFonts.inter(fontSize: 14),
-      decoration: _fieldDecoration(
-        hint: 'e.g. 03001234567',
-        icon: Icons.phone_outlined,
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) return 'Please enter your phone';
-        if (value.length < 10) return 'Enter a valid phone number';
-        return null;
-      },
-    );
-  }
-
-  // ─────────────────────────────────────────
-  // PASSWORD FIELD
-  // ─────────────────────────────────────────
-  Widget _buildPasswordField() {
-    return TextFormField(
-      controller: _passwordController,
-      obscureText: !_isPasswordVisible,
-      style: GoogleFonts.inter(fontSize: 14),
-      decoration: _fieldDecoration(
-        hint: 'Create a password',
-        icon: Icons.lock_outline,
-        suffixIcon: IconButton(
-          icon: Icon(
-            _isPasswordVisible
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
-            color: Colors.grey.shade500,
-            size: 20,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.inter(
+          color: Colors.grey.shade400,
+          fontSize: 14,
+        ),
+        prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: const Color(0xFFF5F7FA),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+            color: Colors.grey.shade200,
+            width: 1.5,
           ),
-          onPressed: () =>
-              setState(() => _isPasswordVisible = !_isPasswordVisible),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(
+            color: AppColors.primary,
+            width: 1.5,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5),
         ),
       ),
-      validator: (value) {
-        if (value == null || value.isEmpty) return 'Please enter a password';
-        if (value.length < 6) return 'Password must be at least 6 characters';
-        return null;
-      },
+      validator: validator,
     );
   }
 
-  // ─────────────────────────────────────────
-  // CONFIRM PASSWORD FIELD
-  // ─────────────────────────────────────────
-  Widget _buildConfirmPasswordField() {
-    return TextFormField(
-      controller: _confirmPasswordController,
-      obscureText: !_isConfirmPasswordVisible,
-      style: GoogleFonts.inter(fontSize: 14),
-      decoration: _fieldDecoration(
-        hint: 'Confirm your password',
-        icon: Icons.lock_outline,
-        suffixIcon: IconButton(
-          icon: Icon(
-            _isConfirmPasswordVisible
-                ? Icons.visibility_outlined
-                : Icons.visibility_off_outlined,
-            color: Colors.grey.shade500,
-            size: 20,
-          ),
-          onPressed: () => setState(
-              () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
-        ),
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty)
-          return 'Please confirm your password';
-        if (value != _passwordController.text) return 'Passwords do not match';
-        return null;
-      },
-    );
-  }
-
-  // ─────────────────────────────────────────
-  // TERMS & CONDITIONS CHECKBOX
-  // ─────────────────────────────────────────
   Widget _buildTermsCheckbox() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1149,9 +1069,6 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
     );
   }
 
-  // ─────────────────────────────────────────
-  // REGISTER BUTTON
-  // ─────────────────────────────────────────
   Widget _buildRegisterButton() {
     return SizedBox(
       width: double.infinity,
@@ -1160,12 +1077,13 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
         onPressed: _isLoading ? null : _handleRegister,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+          disabledBackgroundColor:
+              AppColors.primary.withValues(alpha: 0.6), // ✅ withValues
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
           elevation: 3,
-          shadowColor: AppColors.primary.withOpacity(0.4),
+          shadowColor: AppColors.primary.withValues(alpha: 0.4), // ✅ withValues
         ),
         child: _isLoading
             ? const SizedBox(
@@ -1182,16 +1100,12 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
-                  letterSpacing: 0.5,
                 ),
               ),
       ),
     );
   }
 
-  // ─────────────────────────────────────────
-  // ALREADY HAVE ACCOUNT LINK
-  // ─────────────────────────────────────────
   Widget _buildLoginLink() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1204,7 +1118,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
           ),
         ),
         GestureDetector(
-          onTap: () => Navigator.pop(context), // ← Close sheet → back to login
+          onTap: () => Navigator.pop(context),
           child: Text(
             'Sign In',
             style: GoogleFonts.inter(

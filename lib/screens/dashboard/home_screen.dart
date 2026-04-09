@@ -1,3 +1,4 @@
+// lib/screens/dashboard/home_screen.dart
 import 'package:flutter/material.dart';
 import '../eligibility/emi_calculator_screen.dart';
 import '../loan/loan_type_screen.dart';
@@ -12,7 +13,13 @@ import '../../models/loan_application.dart';
 import '../contacts/contacts_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  // ✅ Accept userName from Login
+  final String userName;
+
+  const HomeScreen({
+    Key? key,
+    required this.userName, // ← Required parameter
+  }) : super(key: key);
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -21,8 +28,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedTab = 0;
   int _currentIndex = 0;
-
-  // ✅ Notification unread count (can be updated dynamically)
   int _unreadNotifications = 3;
 
   final List<Map<String, dynamic>> _navItems = [
@@ -33,7 +38,18 @@ class _HomeScreenState extends State<HomeScreen> {
     {'icon': Icons.money, 'label': 'Loans'},
   ];
 
-  // ✅ Navigate to Loan Type
+  // ✅ Get First Name only
+  String get _firstName {
+    if (widget.userName.trim().isEmpty) return 'User';
+    return widget.userName.trim().split(' ').first;
+  }
+
+  // ✅ Get First Letter for Avatar
+  String get _avatarLetter {
+    if (widget.userName.trim().isEmpty) return 'U';
+    return widget.userName.trim()[0].toUpperCase();
+  }
+
   void _navigateToLoanType() {
     Navigator.push(
       context,
@@ -45,7 +61,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ✅ Open Profile Bottom Sheet
   void _openProfileSheet() {
     showModalBottomSheet(
       context: context,
@@ -56,18 +71,17 @@ class _HomeScreenState extends State<HomeScreen> {
         initialChildSize: 0.95,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        builder: (context, scrollController) => const ClipRRect(
-          borderRadius: BorderRadius.only(
+        builder: (context, scrollController) => ClipRRect(
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
           ),
-          child: ProfileSettingsScreen(),
+          child: const ProfileSettingsScreen(), // ✅ FIX
         ),
       ),
     );
   }
 
-  // ✅ Open Notification Bottom Sheet
   void _openNotificationSheet() {
     showModalBottomSheet(
       context: context,
@@ -76,7 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
       useSafeArea: true,
       builder: (context) => const NotificationScreen(),
     ).then((_) {
-      // ✅ Reset badge count after viewing
       setState(() => _unreadNotifications = 0);
     });
   }
@@ -93,32 +106,18 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-
-            // ✅ Greeting Section
             _buildGreetingSection(),
             const SizedBox(height: 24),
-
-            // ✅ EMI Calculator Card
             _buildEmiCalculatorCard(),
             const SizedBox(height: 24),
-
-            // ✅ Toggle: Money Lent / Money Borrowed
             _buildToggleSection(),
             const SizedBox(height: 24),
-
-            // ✅ Stats Cards
             _buildStatsSection(),
             const SizedBox(height: 24),
-
-            // ✅ Quick Actions
             _buildQuickActionsSection(),
             const SizedBox(height: 24),
-
-            // ✅ Recent Activity
             _buildRecentActivitySection(),
             const SizedBox(height: 24),
-
-            // ✅ Empty / No Loans State
             _buildEmptyStateSection(),
             const SizedBox(height: 80),
           ],
@@ -129,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ✅ APP BAR
+  // ✅ APP BAR  (Avatar shows first letter of name)
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
@@ -150,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       leadingWidth: 180,
       actions: [
-        // ✅ Notification Bell with Red Badge
+        // ✅ Notification Bell
         GestureDetector(
           onTap: _openNotificationSheet,
           child: Stack(
@@ -172,7 +171,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   size: 22,
                 ),
               ),
-              // Red badge
               if (_unreadNotifications > 0)
                 Positioned(
                   top: 6,
@@ -201,19 +199,20 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+
         const SizedBox(width: 4),
 
-        // ✅ Profile Avatar
+        // ✅ Profile Avatar - Shows dynamic first letter
         GestureDetector(
           onTap: _openProfileSheet,
           child: Container(
             margin: const EdgeInsets.symmetric(vertical: 8),
-            child: const CircleAvatar(
-              backgroundColor: Color(0xFF8B5CF6),
+            child: CircleAvatar(
+              backgroundColor: const Color(0xFF8B5CF6),
               radius: 18,
               child: Text(
-                'A',
-                style: TextStyle(
+                _avatarLetter, // ← Dynamic letter from name
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -222,9 +221,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
+
         const SizedBox(width: 8),
 
-        // ✅ Menu / Admin
+        // ✅ Menu
         GestureDetector(
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -256,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ✅ GREETING SECTION
+  // ✅ GREETING SECTION (Dynamic Name)
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Widget _buildGreetingSection() {
     final hour = DateTime.now().hour;
@@ -280,8 +280,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ✅ Dynamic Name from Login
               Text(
-                '$greeting, Aryan $emoji',
+                '$greeting, $_firstName $emoji',
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -299,6 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+
         // ✅ Date Chip
         Container(
           padding: const EdgeInsets.symmetric(
@@ -509,7 +511,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildStatsSection() {
     return Column(
       children: [
-        // ✅ Top two cards in a row
         Row(
           children: [
             Expanded(
@@ -544,8 +545,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         const SizedBox(height: 12),
-
-        // ✅ Full width stat cards
         _buildStatCardFull(
           title: 'Disbursed Amount',
           value: '₹17.55L',
@@ -561,7 +560,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 12),
-
         _buildStatCardFull(
           title: 'Outstanding Balance',
           value: '₹15.77L',
@@ -959,7 +957,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.all(14),
                     child: Row(
                       children: [
-                        // Icon
                         Container(
                           width: 42,
                           height: 42,
@@ -974,8 +971,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-
-                        // Title + Subtitle
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -999,8 +994,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                         ),
-
-                        // Right Side
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
@@ -1069,7 +1062,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         children: [
-          // Icon
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -1109,8 +1101,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 20),
-
-          // Loan Type Chips
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1122,17 +1112,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 20),
-
-          // CTA Button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _navigateToLoanType,
-              icon: const Icon(
-                Icons.add_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
+              icon:
+                  const Icon(Icons.add_rounded, color: Colors.white, size: 20),
               label: const Text(
                 'Create Loan',
                 style: TextStyle(
@@ -1185,8 +1170,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ✅ BOTTOM NAVIGATION BAR
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ✅ BOTTOM NAVIGATION BAR
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Widget _buildBottomNavigationBar() {
     return Container(
       height: 80,
@@ -1207,7 +1192,6 @@ class _HomeScreenState extends State<HomeScreen> {
           final isCenter = index == 2;
           final isActive = _currentIndex == index;
 
-          // ✅ Center FAB Button → New Loan
           if (isCenter) {
             return GestureDetector(
               onTap: () {
@@ -1242,32 +1226,22 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }
 
-          // ✅ Regular Nav Items with proper navigation
           return GestureDetector(
             onTap: () {
               setState(() => _currentIndex = index);
-
               switch (index) {
-                // Dashboard (index 0) → Stay on HomeScreen
                 case 0:
                   break;
-
-                // Incoming (index 1) → Coming Soon
                 case 1:
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: const Row(
                         children: [
-                          Icon(
-                            Icons.move_to_inbox,
-                            color: Colors.white,
-                            size: 18,
-                          ),
+                          Icon(Icons.move_to_inbox,
+                              color: Colors.white, size: 18),
                           SizedBox(width: 8),
-                          Text(
-                            'Incoming screen coming soon!',
-                            style: TextStyle(fontWeight: FontWeight.w600),
-                          ),
+                          Text('Incoming screen coming soon!',
+                              style: TextStyle(fontWeight: FontWeight.w600)),
                         ],
                       ),
                       backgroundColor: const Color(0xFF6B7280),
@@ -1280,80 +1254,55 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                   break;
-
-                // Contacts (index 3) → ContactsScreen
                 case 3:
                   Navigator.push(
                     context,
                     PageRouteBuilder(
                       pageBuilder: (context, animation, secondaryAnimation) =>
                           const ContactsScreen(),
-                      transitionsBuilder: (
-                        context,
-                        animation,
-                        secondaryAnimation,
-                        child,
-                      ) {
-                        const begin = Offset(1.0, 0.0);
-                        const end = Offset.zero;
-                        final tween = Tween(
-                          begin: begin,
-                          end: end,
-                        ).chain(CurveTween(curve: Curves.easeInOut));
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
                         return SlideTransition(
-                          position: animation.drive(tween),
+                          position: animation.drive(
+                            Tween(
+                              begin: const Offset(1.0, 0.0),
+                              end: Offset.zero,
+                            ).chain(CurveTween(curve: Curves.easeInOut)),
+                          ),
                           child: child,
                         );
                       },
                       transitionDuration: const Duration(milliseconds: 300),
                     ),
-                  ).then((_) {
-                    // ✅ Reset to Dashboard when returning from Contacts
-                    setState(() => _currentIndex = 0);
-                  });
+                  ).then((_) => setState(() => _currentIndex = 0));
                   break;
-
-                // Loans (index 4) → LoanTypeScreen
                 case 4:
                   Navigator.push(
                     context,
                     PageRouteBuilder(
                       pageBuilder: (context, animation, secondaryAnimation) =>
-                          LoanTypeScreen(
-                        application: LoanApplication(),
-                      ),
-                      transitionsBuilder: (
-                        context,
-                        animation,
-                        secondaryAnimation,
-                        child,
-                      ) {
-                        const begin = Offset(0.0, 1.0);
-                        const end = Offset.zero;
-                        final tween = Tween(
-                          begin: begin,
-                          end: end,
-                        ).chain(CurveTween(curve: Curves.easeInOut));
+                          LoanTypeScreen(application: LoanApplication()),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
                         return SlideTransition(
-                          position: animation.drive(tween),
+                          position: animation.drive(
+                            Tween(
+                              begin: const Offset(0.0, 1.0),
+                              end: Offset.zero,
+                            ).chain(CurveTween(curve: Curves.easeInOut)),
+                          ),
                           child: child,
                         );
                       },
                       transitionDuration: const Duration(milliseconds: 300),
                     ),
-                  ).then((_) {
-                    // ✅ Reset to Dashboard when returning
-                    setState(() => _currentIndex = 0);
-                  });
+                  ).then((_) => setState(() => _currentIndex = 0));
                   break;
               }
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: isActive
                     ? const Color(0xFF8B5CF6).withValues(alpha: 0.1)
@@ -1363,7 +1312,6 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // ✅ Icon with active indicator dot
                   Stack(
                     clipBehavior: Clip.none,
                     children: [
@@ -1374,7 +1322,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             : const Color(0xFF9CA3AF),
                         size: 24,
                       ),
-                      // ✅ Active dot indicator
                       if (isActive)
                         Positioned(
                           top: -2,
