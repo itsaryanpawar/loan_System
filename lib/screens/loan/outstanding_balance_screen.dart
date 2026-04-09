@@ -189,9 +189,9 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
             child: Column(
               children: [
                 // Profile Row
-                Row(
+                const Row(
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       backgroundColor: Colors.white,
                       radius: 22,
                       child: Text(
@@ -203,8 +203,8 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    SizedBox(width: 12),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

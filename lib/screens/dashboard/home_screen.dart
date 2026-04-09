@@ -56,12 +56,12 @@ class _HomeScreenState extends State<HomeScreen> {
         initialChildSize: 0.95,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        builder: (context, scrollController) => ClipRRect(
-          borderRadius: const BorderRadius.only(
+        builder: (context, scrollController) => const ClipRRect(
+          borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
           ),
-          child: const ProfileSettingsScreen(),
+          child: ProfileSettingsScreen(),
         ),
       ),
     );

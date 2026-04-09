@@ -180,9 +180,9 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
             child: Column(
               children: [
                 // Profile Row
-                Row(
+                const Row(
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       backgroundColor: Colors.white,
                       radius: 24,
                       child: Text(
@@ -194,8 +194,8 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    SizedBox(width: 12),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

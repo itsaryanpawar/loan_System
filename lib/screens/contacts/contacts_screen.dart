@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../communication/notification_screen.dart';
 import '../user/profile_settings_screen.dart';
-import '../eligibility/emi_calculator_screen.dart';
 import '../loan/loan_type_screen.dart';
 import '../../models/loan_application.dart';
 
@@ -838,12 +837,12 @@ class _ContactsScreenState extends State<ContactsScreen>
                       initialChildSize: 0.95,
                       minChildSize: 0.5,
                       maxChildSize: 0.95,
-                      builder: (context, scrollController) => ClipRRect(
-                        borderRadius: const BorderRadius.only(
+                      builder: (context, scrollController) => const ClipRRect(
+                        borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(20),
                           topRight: Radius.circular(20),
                         ),
-                        child: const ProfileSettingsScreen(),
+                        child: ProfileSettingsScreen(),
                       ),
                     ),
                   );

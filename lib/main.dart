@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/dashboard/home_screen.dart';
 import 'screens/dashboard/admin_dashboard_screen.dart';
+import 'screens/auth/login_screen.dart'; // ← Add this import
 import 'utils/constants.dart';
 
 void main() {
@@ -34,10 +35,14 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      initialRoute: '/',
+
+      // ✅ Login Page comes FIRST
+      initialRoute: '/login',
+
       routes: {
-        '/': (context) => const HomeScreen(),
-        '/admin': (context) => const AdminDashboardScreen(),
+        '/login': (context) => const LoginScreen(), // ← First Screen
+        '/': (context) => const HomeScreen(), // ← User Home
+        '/admin': (context) => const AdminDashboardScreen(), // ← Admin Home
       },
     );
   }

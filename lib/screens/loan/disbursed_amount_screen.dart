@@ -163,9 +163,9 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
               child: Column(
                 children: [
                   // Profile Row
-                  Row(
+                  const Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         backgroundColor: Colors.white,
                         radius: 22,
                         child: Text(
@@ -177,8 +177,8 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      const Expanded(
+                      SizedBox(width: 12),
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -423,7 +423,7 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
                     children: _monthlyData.map((data) {
                       final lent = data['lent'] as int;
                       final borrowed = data['borrowed'] as int;
-                      final maxVal = 1500000;
+                      const maxVal = 1500000;
                       final lentH = lent > 0 ? (lent / maxVal) * 80.0 : 4.0;
                       final borH =
                           borrowed > 0 ? (borrowed / maxVal) * 80.0 : 4.0;
