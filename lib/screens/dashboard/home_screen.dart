@@ -13,12 +13,11 @@ import '../../models/loan_application.dart';
 import '../contacts/contacts_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  // ✅ Accept userName from Login
   final String userName;
 
   const HomeScreen({
     Key? key,
-    required this.userName, // ← Required parameter
+    required this.userName,
   }) : super(key: key);
 
   @override
@@ -38,16 +37,40 @@ class _HomeScreenState extends State<HomeScreen> {
     {'icon': Icons.money, 'label': 'Loans'},
   ];
 
-  // ✅ Get First Name only
+  // ✅ Helper to capitalize first letter
+  String _capitalize(String text) {
+    if (text.isEmpty) return 'User';
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
+  }
+
+  // ✅ Get First Name only (handles both email and full name)
   String get _firstName {
     if (widget.userName.trim().isEmpty) return 'User';
-    return widget.userName.trim().split(' ').first;
+
+    final input = widget.userName.trim();
+
+    // If input contains '@', it's an email — extract part before '@'
+    if (input.contains('@')) {
+      final localPart = input.split('@').first;
+      final namePart = localPart.split(RegExp(r'[._]')).first;
+      return _capitalize(namePart);
+    }
+
+    // Otherwise treat as full name — return first word
+    return _capitalize(input.split(' ').first);
   }
 
   // ✅ Get First Letter for Avatar
   String get _avatarLetter {
     if (widget.userName.trim().isEmpty) return 'U';
-    return widget.userName.trim()[0].toUpperCase();
+
+    final input = widget.userName.trim();
+
+    if (input.contains('@')) {
+      return input.split('@').first[0].toUpperCase();
+    }
+
+    return input[0].toUpperCase();
   }
 
   void _navigateToLoanType() {
@@ -76,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
           ),
-          child: const ProfileSettingsScreen(), // ✅ FIX
+          child: const ProfileSettingsScreen(),
         ),
       ),
     );
@@ -128,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ✅ APP BAR  (Avatar shows first letter of name)
+  // ✅ APP BAR
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
@@ -202,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         const SizedBox(width: 4),
 
-        // ✅ Profile Avatar - Shows dynamic first letter
+        // ✅ Profile Avatar
         GestureDetector(
           onTap: _openProfileSheet,
           child: Container(
@@ -211,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: const Color(0xFF8B5CF6),
               radius: 18,
               child: Text(
-                _avatarLetter, // ← Dynamic letter from name
+                _avatarLetter,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -256,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // ✅ GREETING SECTION (Dynamic Name)
+  // ✅ GREETING SECTION
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Widget _buildGreetingSection() {
     final hour = DateTime.now().hour;
@@ -280,7 +303,6 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ✅ Dynamic Name from Login
               Text(
                 '$greeting, $_firstName $emoji',
                 style: const TextStyle(
@@ -938,7 +960,7 @@ class _HomeScreenState extends State<HomeScreen> {
               final color = activity['color'] as Color;
               final isLast = index == activities.length - 1;
 
-              String typeLabel = activity['type'] as String;
+              final String typeLabel = activity['type'] as String;
               Color typeColor;
               switch (typeLabel) {
                 case 'Overdue':
@@ -1116,8 +1138,11 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _navigateToLoanType,
-              icon:
-                  const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+              icon: const Icon(
+                Icons.add_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
               label: const Text(
                 'Create Loan',
                 style: TextStyle(
@@ -1240,8 +1265,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           Icon(Icons.move_to_inbox,
                               color: Colors.white, size: 18),
                           SizedBox(width: 8),
-                          Text('Incoming screen coming soon!',
-                              style: TextStyle(fontWeight: FontWeight.w600)),
+                          Text(
+                            'Incoming screen coming soon!',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
                         ],
                       ),
                       backgroundColor: const Color(0xFF6B7280),
