@@ -782,7 +782,7 @@ class _ContactsScreenState extends State<ContactsScreen>
                   colors: [Color(0xFF8B5CF6), Color(0xFF3B82F6)],
                 ).createShader(bounds),
                 child: const Text(
-                  'Madad – मदद',
+                  ' QuickLoan ',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

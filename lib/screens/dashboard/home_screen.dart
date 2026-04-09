@@ -138,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: EdgeInsets.only(left: 16),
         child: Center(
           child: Text(
-            'Madad - मदद',
+            'QuickLoan',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
