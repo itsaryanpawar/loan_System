@@ -1,3 +1,4 @@
+// lib/screens/loan/success_screen.dart
 import 'package:flutter/material.dart';
 import '../../models/loan_application.dart';
 import '../../utils/constants.dart';
@@ -125,17 +126,20 @@ class SuccessScreen extends StatelessWidget {
 
               const SizedBox(height: 40),
 
-              // Button
+              // ✅ Fix: prefer_const_constructors (line 137)
+              // HomeScreen cannot be const because userName is a runtime
+              // value ('') even though it's a literal —
+              // the fix is to extract the MaterialPageRoute builder
+              // so the HomeScreen itself becomes const
               CustomButton(
                 text: 'Back to Home',
                 icon: Icons.home,
                 onPressed: () {
-                  // ✅ AFTER (pass userName)
                   Navigator.pushAndRemoveUntil(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => HomeScreen(
-                        userName: '', // ← Add this (empty or pass actual name)
+                      builder: (context) => const HomeScreen(
+                        userName: '', // ✅ const works — '' is a const literal
                       ),
                     ),
                     (route) => false,

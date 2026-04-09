@@ -29,15 +29,13 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // ✅ Fix 3a - use_build_context_synchronously
-  // Always check mounted before using context after async
+  // ✅ Fix: use_build_context_synchronously — mounted check after every await
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       await Future.delayed(const Duration(seconds: 2));
 
-      if (!mounted) return; // ✅ Check mounted first
-
+      if (!mounted) return; // ✅ mounted check
       setState(() => _isLoading = false);
 
       if (_selectedRole == 'admin') {
@@ -55,13 +53,12 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // ✅ Fix 3b - use_build_context_synchronously in Google Login
+  // ✅ Fix: use_build_context_synchronously
   void _handleGoogleLogin() async {
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 2));
 
-    if (!mounted) return; // ✅ Check mounted
-
+    if (!mounted) return; // ✅ mounted check
     setState(() => _isLoading = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -72,13 +69,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ✅ Fix 3c - use_build_context_synchronously in Apple Login
+  // ✅ Fix: use_build_context_synchronously
   void _handleAppleLogin() async {
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 2));
 
-    if (!mounted) return; // ✅ Check mounted
-
+    if (!mounted) return; // ✅ mounted check
     setState(() => _isLoading = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -97,12 +93,11 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (context) => const RegisterBottomSheet(),
     ).then((result) {
       if (result == true && mounted) {
-        // ✅ Check mounted
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomeScreen(
-              userName: '', // Pass name from register sheet if available
+            builder: (context) => const HomeScreen(
+              userName: '',
             ),
           ),
         );
@@ -140,8 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
           end: Alignment.bottomRight,
           colors: [
             AppColors.primary,
-            AppColors.primary
-                .withValues(alpha: 0.7), // ✅ withValues not withOpacity
+            AppColors.primary.withValues(alpha: 0.7),
           ],
         ),
         borderRadius: const BorderRadius.only(
@@ -155,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2), // ✅ withValues
+              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -179,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
             'Instant Loan Approval',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.85), // ✅ withValues
+              color: Colors.white.withValues(alpha: 0.85),
             ),
           ),
         ],
@@ -195,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.15), // ✅ withValues
+            color: Colors.grey.withValues(alpha: 0.15),
             spreadRadius: 5,
             blurRadius: 20,
             offset: const Offset(0, 5),
@@ -494,13 +488,12 @@ class _LoginScreenState extends State<LoginScreen> {
         onPressed: _isLoading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          disabledBackgroundColor:
-              AppColors.primary.withValues(alpha: 0.6), // ✅ withValues
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
           elevation: 3,
-          shadowColor: AppColors.primary.withValues(alpha: 0.4), // ✅ withValues
+          shadowColor: AppColors.primary.withValues(alpha: 0.4),
         ),
         child: _isLoading
             ? const SizedBox(
@@ -567,7 +560,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withValues(alpha: 0.08), // ✅ withValues
+                    color: Colors.grey.withValues(alpha: 0.08),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -609,7 +602,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2), // ✅ withValues
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -701,6 +694,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
     super.dispose();
   }
 
+  // ✅ Fix: use_build_context_synchronously
   void _handleRegister() async {
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -716,8 +710,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
       setState(() => _isLoading = true);
       await Future.delayed(const Duration(seconds: 2));
 
-      if (!mounted) return; // ✅ Fix use_build_context_synchronously
-
+      if (!mounted) return; // ✅ mounted check
       setState(() => _isLoading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -727,7 +720,7 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
         ),
       );
 
-      Navigator.pop(context, _nameController.text.trim()); // ✅ Return name
+      Navigator.pop(context, _nameController.text.trim());
     }
   }
 
@@ -958,7 +951,6 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
     );
   }
 
-  // ✅ Single reusable field builder
   Widget _buildField({
     required TextEditingController controller,
     required String hint,
@@ -1077,13 +1069,12 @@ class _RegisterBottomSheetState extends State<RegisterBottomSheet> {
         onPressed: _isLoading ? null : _handleRegister,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          disabledBackgroundColor:
-              AppColors.primary.withValues(alpha: 0.6), // ✅ withValues
+          disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
           elevation: 3,
-          shadowColor: AppColors.primary.withValues(alpha: 0.4), // ✅ withValues
+          shadowColor: AppColors.primary.withValues(alpha: 0.4),
         ),
         child: _isLoading
             ? const SizedBox(

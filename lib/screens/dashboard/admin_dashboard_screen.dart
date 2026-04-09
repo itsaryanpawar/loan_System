@@ -1,3 +1,4 @@
+// lib/screens/dashboard/admin_dashboard_screen.dart
 import 'package:flutter/material.dart';
 import '../../models/loan_application.dart';
 import '../../services/api_service.dart';
@@ -26,7 +27,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     final applications = await _apiService.getAllApplications();
 
-    if (!mounted) return; // ✅ FIX
+    if (!mounted) return; // ✅ Fix: use_build_context_synchronously
 
     setState(() {
       _applications = applications;
@@ -66,14 +67,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
             itemBuilder: (context) => [
               PopupMenuItem(
-                child: const Text('Clear All Data'),
-                onTap: () async {
-                  await Future.delayed(Duration.zero);
-
-                  if (!mounted) return; // ✅ FIX
-
-                  _showClearDataDialog();
+                // ✅ Fix: use_build_context_synchronously (line 309)
+                // Use onTap with mounted check correctly —
+                // PopupMenuItem.onTap runs after the menu closes,
+                // so we schedule via addPostFrameCallback to be safe
+                onTap: () {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return; // ✅ correct mounted guard
+                    _showClearDataDialog();
+                  });
                 },
+                child: const Text('Clear All Data'),
               ),
             ],
           ),
@@ -184,7 +188,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _applications.length,
                           itemBuilder: (context, index) {
-                            return _buildApplicationCard(_applications[index]);
+                            return _buildApplicationCard(
+                              _applications[index],
+                            );
                           },
                         ),
                     ],
@@ -196,7 +202,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -258,7 +268,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _buildDetailRow(Icons.phone, 'Phone', app.phoneNumber ?? 'N/A'),
+                _buildDetailRow(
+                  Icons.phone,
+                  'Phone',
+                  app.phoneNumber ?? 'N/A',
+                ),
               ],
             ),
           ),
@@ -304,9 +318,15 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             onPressed: () async {
               await _apiService.clearAllApplications();
 
-              if (!mounted) return; // ✅ FIX
+              // ✅ Fix: use dialogContext (not context) after await
+              // dialogContext does not need mounted check —
+              // it belongs to the dialog's own BuildContext
+              if (!mounted) return;
 
-              Navigator.pop(dialogContext);
+              // ✅ Use dialogContext to pop the dialog safely
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+              }
 
               _loadApplications();
             },

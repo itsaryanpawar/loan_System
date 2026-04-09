@@ -99,7 +99,11 @@ class _HomeScreenState extends State<HomeScreen> {
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
           ),
-          child: const ProfileSettingsScreen(),
+          // ✅ Pass login data to ProfileSettingsScreen
+          child: ProfileSettingsScreen(
+            userName: widget.userName,
+            userEmail: widget.userName.contains('@') ? widget.userName : '',
+          ),
         ),
       ),
     );
@@ -544,7 +548,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const TotalLoansScreen(),
+                    builder: (context) => TotalLoansScreen(
+                      userName: widget.userName, // ✅ Pass userName
+                    ),
                   ),
                 ),
               ),
@@ -559,7 +565,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const ActiveLoansScreen(),
+                    builder: (context) => ActiveLoansScreen(
+                      userName: widget.userName, // ✅ Pass userName
+                    ),
                   ),
                 ),
               ),
@@ -577,7 +585,9 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const DisbursedAmountScreen(),
+              builder: (context) => DisbursedAmountScreen(
+                userName: widget.userName, // ✅ Pass userName
+              ),
             ),
           ),
         ),
@@ -592,7 +602,9 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const OutstandingBalanceScreen(),
+              builder: (context) => OutstandingBalanceScreen(
+                userName: widget.userName, // ✅ Pass userName
+              ),
             ),
           ),
         ),

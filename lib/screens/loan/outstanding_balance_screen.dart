@@ -1,7 +1,14 @@
+// lib/screens/loan/outstanding_balance_screen.dart
 import 'package:flutter/material.dart';
 
 class OutstandingBalanceScreen extends StatefulWidget {
-  const OutstandingBalanceScreen({Key? key}) : super(key: key);
+  // ✅ Accept userName from HomeScreen
+  final String userName;
+
+  const OutstandingBalanceScreen({
+    Key? key,
+    this.userName = '',
+  }) : super(key: key);
 
   @override
   State<OutstandingBalanceScreen> createState() =>
@@ -15,11 +22,56 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
   static const _purpleColor = Color(0xFF8B5CF6);
   static const _blueColor = Color(0xFF3B82F6);
 
-  // ✅ Aryan's outstanding balances only
+  // ✅ Resolve full display name (handles email or full name)
+  String get _displayName {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return 'User';
+
+    if (input.contains('@')) {
+      final localPart = input.split('@').first;
+      return localPart
+          .split(RegExp(r'[._]'))
+          .map(
+            (w) => w.isNotEmpty
+                ? w[0].toUpperCase() + w.substring(1).toLowerCase()
+                : '',
+          )
+          .join(' ');
+    }
+
+    final firstWord = input.split(' ').first;
+    return firstWord[0].toUpperCase() + firstWord.substring(1);
+  }
+
+  // ✅ Resolve avatar letter
+  String get _avatarLetter {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return 'U';
+    if (input.contains('@')) {
+      return input.split('@').first[0].toUpperCase();
+    }
+    return input[0].toUpperCase();
+  }
+
+  // ✅ Get first name only for inline badge text
+  String get _firstName {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return 'User';
+    if (input.contains('@')) {
+      final localPart = input.split('@').first;
+      final firstPart = localPart.split(RegExp(r'[._]')).first;
+      return firstPart.isNotEmpty
+          ? firstPart[0].toUpperCase() + firstPart.substring(1).toLowerCase()
+          : 'User';
+    }
+    final firstWord = input.split(' ').first;
+    return firstWord[0].toUpperCase() + firstWord.substring(1);
+  }
+
   late final List<Map<String, dynamic>> _outstandingList = [
     {
       'id': 'LN-ARY-001',
-      'party': 'Rohan Mehta', // ✅ Rohan owes Aryan
+      'party': 'Rohan Mehta',
       'category': 'ToCollect',
       'type': 'Personal',
       'principal': 25000,
@@ -29,15 +81,15 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
       'nextDue': '10 Apr 2024',
       'risk': 'Low Risk',
       'riskColor': const Color(0xFF10B981),
-      'avatar': 'A',
+      'avatar': 'R',
       'avatarColor': _purpleColor,
       'phone': '+91 98765 11111',
       'lastPayment': '10 Mar 2024',
-      'note': 'Rohan needs to pay Aryan',
+      'note': 'Rohan needs to pay back the personal loan',
     },
     {
       'id': 'LN-ARY-002',
-      'party': 'HDFC Bank', // ✅ Aryan owes HDFC
+      'party': 'HDFC Bank',
       'category': 'ToPay',
       'type': 'Home Loan',
       'principal': 1500000,
@@ -47,15 +99,15 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
       'nextDue': '15 Apr 2024',
       'risk': 'Low Risk',
       'riskColor': const Color(0xFF10B981),
-      'avatar': 'A',
+      'avatar': 'H',
       'avatarColor': _blueColor,
       'phone': '1800-XXX-XXXX',
       'lastPayment': '15 Mar 2024',
-      'note': 'Aryan needs to pay HDFC',
+      'note': 'Home loan EMI due this month',
     },
     {
       'id': 'LN-ARY-004',
-      'party': 'Vijay Finance', // ✅ Aryan owes Vijay Finance - overdue
+      'party': 'Vijay Finance',
       'category': 'ToPay',
       'type': 'Vehicle Loan',
       'principal': 120000,
@@ -65,11 +117,11 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
       'nextDue': '20 Mar 2024',
       'risk': 'High Risk',
       'riskColor': const Color(0xFFEF4444),
-      'avatar': 'A',
+      'avatar': 'V',
       'avatarColor': _purpleColor,
       'phone': '+91 77777 22222',
       'lastPayment': 'Never',
-      'note': 'OVERDUE - Aryan must pay immediately',
+      'note': 'OVERDUE - Must pay immediately to avoid penalties',
     },
   ];
 
@@ -125,7 +177,7 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
       ),
       body: Column(
         children: [
-          // ✅ Overdue Alert for Aryan
+          // ✅ Overdue Alert — Dynamic name
           if (_overdueCount > 0)
             Container(
               margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -145,10 +197,11 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
                     size: 20,
                   ),
                   const SizedBox(width: 10),
-                  const Expanded(
+                  // ✅ Dynamic name in alert
+                  Expanded(
                     child: Text(
-                      'You have overdue payment(s)! Pay immediately to avoid penalties.',
-                      style: TextStyle(
+                      '$_firstName, you have overdue payment(s)! Pay immediately to avoid penalties.',
+                      style: const TextStyle(
                         fontSize: 13,
                         color: Color(0xFFEF4444),
                         fontWeight: FontWeight.w500,
@@ -174,7 +227,7 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
               ),
             ),
 
-          // ✅ Aryan's Balance Summary Banner
+          // ✅ Dynamic Balance Summary Banner
           Container(
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(20),
@@ -188,35 +241,37 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
             ),
             child: Column(
               children: [
-                // Profile Row
-                const Row(
+                // ✅ Dynamic Profile Row
+                Row(
                   children: [
+                    // ✅ Dynamic Avatar
                     CircleAvatar(
                       backgroundColor: Colors.white,
                       radius: 22,
                       child: Text(
-                        'A',
-                        style: TextStyle(
+                        _avatarLetter,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFFEF4444),
                         ),
                       ),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // ✅ Dynamic Display Name
                           Text(
-                            'Aryan Pawar',
-                            style: TextStyle(
+                            _displayName,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
-                          Text(
+                          const Text(
                             'Outstanding Balance Overview',
                             style: TextStyle(
                               fontSize: 12,
@@ -235,7 +290,7 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // To Collect vs To Pay
+                // ✅ Stats Row
                 Row(
                   children: [
                     Expanded(
@@ -335,7 +390,7 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
             ),
           ),
 
-          // View Filter Tabs
+          // ✅ View Filter Tabs
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(4),
@@ -393,7 +448,7 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Outstanding Cards
+          // ✅ Outstanding Cards
           Expanded(
             child: _filtered.isEmpty
                 ? Center(
@@ -417,7 +472,9 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: _filtered.length,
                     itemBuilder: (context, index) {
-                      return _buildOutstandingCard(_filtered[index]);
+                      return _buildOutstandingCard(
+                        _filtered[index],
+                      );
                     },
                   ),
           ),
@@ -452,7 +509,7 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Direction Badge
+          // ✅ Direction Badge with dynamic first name
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 10,
@@ -477,10 +534,11 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
                       : const Color(0xFFEF4444),
                 ),
                 const SizedBox(width: 6),
+                // ✅ Dynamic first name in badge
                 Text(
                   isToCollect
-                      ? '${loan['party']} owes Aryan'
-                      : 'Aryan owes ${loan['party']}',
+                      ? '${loan['party']} owes $_firstName'
+                      : '$_firstName owes ${loan['party']}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -496,6 +554,7 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
 
           Row(
             children: [
+              // ✅ Avatar with first letter of party name
               CircleAvatar(
                 backgroundColor: loan['avatarColor'] as Color,
                 radius: 22,
@@ -504,6 +563,7 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
               ),
@@ -590,7 +650,7 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Details
+          // ✅ Details Row
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -620,7 +680,7 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
           ),
           const SizedBox(height: 12),
 
-          // Action Row
+          // ✅ Action Row
           Row(
             children: [
               const Icon(
@@ -637,19 +697,16 @@ class _OutstandingBalanceScreenState extends State<OutstandingBalanceScreen> {
                 ),
               ),
               const Spacer(),
-              // Phone Quick Action
               _buildQuickActionButton(
                 Icons.phone_outlined,
                 const Color(0xFF10B981),
               ),
               const SizedBox(width: 8),
-              // Message Quick Action
               _buildQuickActionButton(
                 Icons.message_outlined,
                 const Color(0xFF3B82F6),
               ),
               const SizedBox(width: 8),
-              // Main Action Button
               ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(

@@ -1,7 +1,14 @@
+// lib/screens/loan/active_loans_screen.dart
 import 'package:flutter/material.dart';
 
 class ActiveLoansScreen extends StatefulWidget {
-  const ActiveLoansScreen({Key? key}) : super(key: key);
+  // ✅ Accept userName from HomeScreen
+  final String userName;
+
+  const ActiveLoansScreen({
+    Key? key,
+    this.userName = '',
+  }) : super(key: key);
 
   @override
   State<ActiveLoansScreen> createState() => _ActiveLoansScreenState();
@@ -14,11 +21,41 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
   static const _purpleColor = Color(0xFF8B5CF6);
   static const _blueColor = Color(0xFF3B82F6);
 
-  // ✅ Aryan's active loans only
+  // ✅ Resolve display name from userName (handles email or full name)
+  String get _displayName {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return 'User';
+
+    // If it's an email, extract and format local part
+    if (input.contains('@')) {
+      final localPart = input.split('@').first;
+      return localPart
+          .split(RegExp(r'[._]'))
+          .map((w) => w.isNotEmpty
+              ? w[0].toUpperCase() + w.substring(1).toLowerCase()
+              : '')
+          .join(' ');
+    }
+
+    // Otherwise return first word capitalized
+    final firstWord = input.split(' ').first;
+    return firstWord[0].toUpperCase() + firstWord.substring(1);
+  }
+
+  // ✅ Resolve avatar letter
+  String get _avatarLetter {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return 'U';
+    if (input.contains('@')) {
+      return input.split('@').first[0].toUpperCase();
+    }
+    return input[0].toUpperCase();
+  }
+
   late final List<Map<String, dynamic>> _activeLoans = [
     {
       'id': 'LN-ARY-001',
-      'loanTo': 'Rohan Mehta', // ✅ Aryan lent to Rohan
+      'loanTo': 'Rohan Mehta',
       'category': 'Lent',
       'type': 'Personal',
       'principal': 25000,
@@ -26,7 +63,7 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
       'nextEmiDate': '10 Apr 2024',
       'nextEmiAmount': 2200,
       'daysLeft': 5,
-      'avatar': 'A',
+      'avatar': 'R',
       'avatarColor': _purpleColor,
       'interest': 0.0,
       'paid': 2,
@@ -36,7 +73,7 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
     },
     {
       'id': 'LN-ARY-002',
-      'loanTo': 'HDFC Bank', // ✅ Aryan borrowed from HDFC
+      'loanTo': 'HDFC Bank',
       'category': 'Borrowed',
       'type': 'Home',
       'principal': 1500000,
@@ -44,7 +81,7 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
       'nextEmiDate': '15 Apr 2024',
       'nextEmiAmount': 14500,
       'daysLeft': 10,
-      'avatar': 'A',
+      'avatar': 'H',
       'avatarColor': _blueColor,
       'interest': 8.5,
       'paid': 3,
@@ -54,7 +91,7 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
     },
     {
       'id': 'LN-ARY-004',
-      'loanTo': 'Vijay Finance', // ✅ Aryan's overdue vehicle loan
+      'loanTo': 'Vijay Finance',
       'category': 'Borrowed',
       'type': 'Vehicle',
       'principal': 120000,
@@ -62,7 +99,7 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
       'nextEmiDate': '20 Mar 2024',
       'nextEmiAmount': 6500,
       'daysLeft': -15,
-      'avatar': 'A',
+      'avatar': 'V',
       'avatarColor': _purpleColor,
       'interest': 12.0,
       'paid': 0,
@@ -118,7 +155,7 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
       ),
       body: Column(
         children: [
-          // ✅ Aryan's Profile + Stats Banner
+          // ✅ Dynamic User Profile + Stats Banner
           Container(
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(20),
@@ -132,15 +169,16 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
             ),
             child: Column(
               children: [
-                // Aryan Profile Row
+                // ✅ Dynamic Profile Row
                 Row(
                   children: [
-                    const CircleAvatar(
+                    // ✅ Dynamic Avatar Letter
+                    CircleAvatar(
                       backgroundColor: Colors.white,
                       radius: 22,
                       child: Text(
-                        'A',
-                        style: TextStyle(
+                        _avatarLetter,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF10B981),
@@ -148,19 +186,20 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // ✅ Dynamic Display Name
                           Text(
-                            'Aryan Pawar',
-                            style: TextStyle(
+                            _displayName,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
-                          Text(
+                          const Text(
                             'Active Loan Summary',
                             style: TextStyle(
                               fontSize: 12,
@@ -374,6 +413,7 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
 
                 Row(
                   children: [
+                    // ✅ Avatar with first letter of loanTo name
                     CircleAvatar(
                       backgroundColor: loan['avatarColor'] as Color,
                       radius: 22,
@@ -382,6 +422,7 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
                     ),
@@ -445,7 +486,7 @@ class _ActiveLoansScreenState extends State<ActiveLoansScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Progress
+                // Progress Bar
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

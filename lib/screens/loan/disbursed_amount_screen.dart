@@ -1,7 +1,14 @@
+// lib/screens/loan/disbursed_amount_screen.dart
 import 'package:flutter/material.dart';
 
 class DisbursedAmountScreen extends StatefulWidget {
-  const DisbursedAmountScreen({Key? key}) : super(key: key);
+  // ✅ Accept userName from HomeScreen
+  final String userName;
+
+  const DisbursedAmountScreen({
+    Key? key,
+    this.userName = '',
+  }) : super(key: key);
 
   @override
   State<DisbursedAmountScreen> createState() => _DisbursedAmountScreenState();
@@ -24,18 +31,63 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
   static const _purpleColor = Color(0xFF8B5CF6);
   static const _blueColor = Color(0xFF3B82F6);
 
-  // ✅ Aryan's disbursements only
+  // ✅ Resolve display name from userName (handles email or full name)
+  String get _displayName {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return 'User';
+
+    if (input.contains('@')) {
+      final localPart = input.split('@').first;
+      return localPart
+          .split(RegExp(r'[._]'))
+          .map(
+            (w) => w.isNotEmpty
+                ? w[0].toUpperCase() + w.substring(1).toLowerCase()
+                : '',
+          )
+          .join(' ');
+    }
+
+    final firstWord = input.split(' ').first;
+    return firstWord[0].toUpperCase() + firstWord.substring(1);
+  }
+
+  // ✅ Resolve avatar letter
+  String get _avatarLetter {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return 'U';
+    if (input.contains('@')) {
+      return input.split('@').first[0].toUpperCase();
+    }
+    return input[0].toUpperCase();
+  }
+
+  // ✅ Get first name only for inline use
+  String get _firstName {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return 'User';
+    if (input.contains('@')) {
+      final localPart = input.split('@').first;
+      final firstPart = localPart.split(RegExp(r'[._]')).first;
+      return firstPart.isNotEmpty
+          ? firstPart[0].toUpperCase() + firstPart.substring(1).toLowerCase()
+          : 'User';
+    }
+    final firstWord = input.split(' ').first;
+    return firstWord[0].toUpperCase() + firstWord.substring(1);
+  }
+
   late final List<Map<String, dynamic>> _disbursements = [
     {
       'id': 'LN-ARY-001',
-      'party': 'Rohan Mehta', // ✅ Aryan lent to Rohan
+      'party': 'Rohan Mehta',
       'category': 'Lent',
       'type': 'Personal',
       'amount': 25000,
       'date': '10 Feb 2024',
       'method': 'UPI Transfer',
       'account': 'GPay → Rohan',
-      'avatar': 'A',
+      'avatar': 'R',
       'avatarColor': _purpleColor,
       'recovered': 4400,
       'status': 'Partial',
@@ -43,14 +95,14 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
     },
     {
       'id': 'LN-ARY-002',
-      'party': 'HDFC Bank', // ✅ HDFC disbursed to Aryan
+      'party': 'HDFC Bank',
       'category': 'Borrowed',
       'type': 'Home',
       'amount': 1500000,
       'date': '15 Jan 2024',
       'method': 'Bank Transfer',
-      'account': 'HDFC ****4521 → Aryan',
-      'avatar': 'A',
+      'account': 'HDFC ****4521 → Account',
+      'avatar': 'H',
       'avatarColor': _blueColor,
       'recovered': 43500,
       'status': 'Partial',
@@ -58,14 +110,14 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
     },
     {
       'id': 'LN-ARY-003',
-      'party': 'Sneha Kulkarni', // ✅ Aryan lent to Sneha - recovered
+      'party': 'Sneha Kulkarni',
       'category': 'Lent',
       'type': 'Personal',
       'amount': 10000,
       'date': '05 Dec 2023',
       'method': 'Cash',
       'account': 'Cash to Sneha',
-      'avatar': 'A',
+      'avatar': 'S',
       'avatarColor': _purpleColor,
       'recovered': 10000,
       'status': 'Recovered',
@@ -73,14 +125,14 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
     },
     {
       'id': 'LN-ARY-004',
-      'party': 'Vijay Finance', // ✅ Vijay Finance gave to Aryan
+      'party': 'Vijay Finance',
       'category': 'Borrowed',
       'type': 'Vehicle',
       'amount': 120000,
       'date': '20 Mar 2024',
       'method': 'Bank Transfer',
-      'account': 'Vijay Finance → Aryan SBI',
-      'avatar': 'A',
+      'account': 'Vijay Finance → SBI',
+      'avatar': 'V',
       'avatarColor': _purpleColor,
       'recovered': 0,
       'status': 'Pending',
@@ -114,8 +166,6 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
   int get _totalRecovered =>
       _disbursements.fold(0, (sum, d) => sum + (d['recovered'] as int));
 
-  int get _totalDisbursed => _totalLent + _totalBorrowed;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -148,7 +198,7 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // ✅ Aryan's Profile + Stats Banner
+            // ✅ Dynamic Profile + Stats Banner
             Container(
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(20),
@@ -162,35 +212,37 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
               ),
               child: Column(
                 children: [
-                  // Profile Row
-                  const Row(
+                  // ✅ Dynamic Profile Row
+                  Row(
                     children: [
+                      // ✅ Dynamic Avatar
                       CircleAvatar(
                         backgroundColor: Colors.white,
                         radius: 22,
                         child: Text(
-                          'A',
-                          style: TextStyle(
+                          _avatarLetter,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF3B82F6),
                           ),
                         ),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // ✅ Dynamic Name
                             Text(
-                              'Aryan Pawar',
-                              style: TextStyle(
+                              _displayName,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
                             ),
-                            Text(
+                            const Text(
                               'Disbursement Overview',
                               style: TextStyle(
                                 fontSize: 12,
@@ -209,7 +261,7 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Lent vs Borrowed
+                  // ✅ Stats Row
                   Row(
                     children: [
                       Expanded(
@@ -252,7 +304,7 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
               ),
             ),
 
-            // Period + Category Selectors
+            // ✅ Period Filter Chips
             SizedBox(
               height: 44,
               child: ListView.builder(
@@ -298,7 +350,7 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
             ),
             const SizedBox(height: 10),
 
-            // Category Filter
+            // ✅ Category Filter
             SizedBox(
               height: 40,
               child: ListView.builder(
@@ -353,7 +405,7 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Monthly Bar Chart
+            // ✅ Monthly Bar Chart with Dynamic Name
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(20),
@@ -370,9 +422,10 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Aryan's Monthly Activity",
-                    style: TextStyle(
+                  // ✅ Dynamic name in chart title
+                  Text(
+                    "${_firstName}'s Monthly Activity",
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF1F2937),
@@ -498,7 +551,7 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
             ),
             const SizedBox(height: 20),
 
-            // List Header
+            // ✅ List Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -524,7 +577,7 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
             ),
             const SizedBox(height: 12),
 
-            // Disbursement Cards
+            // ✅ Disbursement Cards
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -577,7 +630,7 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Category Badge
+          // ✅ Category Badge with dynamic first name
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 8,
@@ -602,10 +655,11 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
                       : const Color(0xFF3B82F6),
                 ),
                 const SizedBox(width: 4),
+                // ✅ Shows dynamic first name instead of hardcoded "Aryan"
                 Text(
                   isLent
-                      ? 'Aryan → ${data['party']}'
-                      : '${data['party']} → Aryan',
+                      ? '$_firstName → ${data['party']}'
+                      : '${data['party']} → $_firstName',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -743,11 +797,14 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
                 color: Color(0xFF9CA3AF),
               ),
               const SizedBox(width: 4),
-              Text(
-                '${data['method']} • ${data['account']}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF9CA3AF),
+              Expanded(
+                child: Text(
+                  '${data['method']} • ${data['account']}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

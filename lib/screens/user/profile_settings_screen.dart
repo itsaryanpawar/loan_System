@@ -1,8 +1,17 @@
+// lib/screens/user/profile_settings_screen.dart
 import 'package:flutter/material.dart';
 import '../communication/chat_document_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
-  const ProfileSettingsScreen({Key? key}) : super(key: key);
+  // ✅ Accept data passed from Login → HomeScreen → ProfileSettings
+  final String userName;
+  final String userEmail;
+
+  const ProfileSettingsScreen({
+    Key? key,
+    this.userName = '',
+    this.userEmail = '',
+  }) : super(key: key);
 
   @override
   State<ProfileSettingsScreen> createState() => _ProfileSettingsScreenState();
@@ -14,12 +23,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   bool _biometricEnabled = false;
   bool _darkModeEnabled = false;
 
-  // ✅ Editable user data
-  String _fullName = 'Aryan Pawar';
-  String _phone = '+91 98765 43210';
-  String _email = 'aryan.pawar@gmail.com';
-  String _city = 'Mumbai, Maharashtra';
-  String _avatarLetter = 'A';
+  // ✅ User data — initialized from login in initState
+  late String _fullName;
+  late String _email;
+  late String _avatarLetter;
+  String _phone = '';
+  String _city = '';
 
   final List<String> _currencies = [
     '₹ Indian Rupee',
@@ -31,9 +40,49 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     'SGD Singapore Dollar',
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Auto-fill from login data
+    _email = widget.userEmail.isNotEmpty ? widget.userEmail : '';
+    _fullName = _resolveFullName();
+    _avatarLetter = _resolveAvatarLetter();
+  }
+
+  // ✅ Resolve display name from userName (handles email or full name)
+  String _resolveFullName() {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return '';
+
+    // If it's an email, extract local part before '@'
+    if (input.contains('@')) {
+      final localPart = input.split('@').first;
+      // Capitalize each word split by dot/underscore
+      return localPart
+          .split(RegExp(r'[._]'))
+          .map((w) => w.isNotEmpty
+              ? w[0].toUpperCase() + w.substring(1).toLowerCase()
+              : '')
+          .join(' ');
+    }
+
+    // Otherwise return as-is (already a proper name)
+    return input;
+  }
+
+  // ✅ Resolve avatar letter
+  String _resolveAvatarLetter() {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return 'U';
+
+    if (input.contains('@')) {
+      return input.split('@').first[0].toUpperCase();
+    }
+    return input[0].toUpperCase();
+  }
+
   // ✅ Show Edit Profile Bottom Sheet
   void _showEditProfileSheet() {
-    // Controllers pre-filled with current data
     final nameController = TextEditingController(text: _fullName);
     final phoneController = TextEditingController(text: _phone);
     final emailController = TextEditingController(text: _email);
@@ -122,7 +171,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                     children: [
                                       GestureDetector(
                                         onTap: () {
-                                          // Show avatar letter picker
                                           _showAvatarPicker(
                                             context,
                                             selectedAvatar,
@@ -199,10 +247,45 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             ),
                             const SizedBox(height: 28),
 
+                            // ✅ Login Data Pre-fill Notice
+                            if (widget.userEmail.isNotEmpty ||
+                                widget.userName.isNotEmpty)
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 20),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981)
+                                      .withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFF10B981)
+                                        .withValues(alpha: 0.2),
+                                  ),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.auto_awesome_rounded,
+                                      size: 18,
+                                      color: Color(0xFF10B981),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'Fields are pre-filled from your login. You can update them anytime.',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF10B981),
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
                             // ✅ Personal Information Section
-                            _buildSheetSectionTitle(
-                              'Personal Information',
-                            ),
+                            _buildSheetSectionTitle('Personal Information'),
                             const SizedBox(height: 12),
                             _buildFormCard([
                               // Full Name
@@ -233,10 +316,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 iconColor: const Color(0xFF10B981),
                                 keyboardType: TextInputType.phone,
                                 validator: (val) {
-                                  if (val == null || val.trim().isEmpty) {
-                                    return 'Phone cannot be empty';
-                                  }
-                                  if (val.trim().length < 10) {
+                                  if (val != null &&
+                                      val.trim().isNotEmpty &&
+                                      val.trim().length < 10) {
                                     return 'Enter a valid phone number';
                                   }
                                   return null;
@@ -273,10 +355,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 icon: Icons.location_on_outlined,
                                 iconColor: const Color(0xFFEF4444),
                                 validator: (val) {
-                                  if (val == null || val.trim().isEmpty) {
-                                    return 'City cannot be empty';
-                                  }
-                                  return null;
+                                  return null; // optional
                                 },
                               ),
                             ]),
@@ -323,7 +402,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                               child: ElevatedButton.icon(
                                 onPressed: () {
                                   if (formKey.currentState!.validate()) {
-                                    // ✅ Save all changes to state
                                     setState(() {
                                       _fullName = nameController.text.trim();
                                       _phone = phoneController.text.trim();
@@ -333,7 +411,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                     });
                                     Navigator.pop(sheetContext);
 
-                                    // ✅ Success Snackbar
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: const Row(
@@ -584,7 +661,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Label Row
           Row(
             children: [
               Container(
@@ -607,8 +683,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             ],
           ),
           const SizedBox(height: 8),
-
-          // Input
           TextFormField(
             controller: controller,
             keyboardType: keyboardType,
@@ -633,28 +707,19 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(
-                  color: Color(0xFFE5E7EB),
-                ),
+                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(
-                  color: Color(0xFFE5E7EB),
-                ),
+                borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(
-                  color: iconColor,
-                  width: 1.5,
-                ),
+                borderSide: BorderSide(color: iconColor, width: 1.5),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(
-                  color: Color(0xFFEF4444),
-                ),
+                borderSide: const BorderSide(color: Color(0xFFEF4444)),
               ),
               focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -718,10 +783,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       backgroundColor: const Color(0xFFF5F6FA),
       body: Column(
         children: [
-          // ✅ Profile Header with updated data
           _buildProfileHeader(context),
-
-          // ✅ Settings Content
           Expanded(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -729,45 +791,44 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Account Section
+                  // ✅ Account Section
                   _buildSectionTitle('Account'),
                   const SizedBox(height: 8),
                   _buildSettingsCard([
                     _buildProfileInfoTile(
                       icon: Icons.person_outline_rounded,
                       label: 'Full Name',
-                      value: _fullName, // ✅ Dynamic
+                      value: _fullName.isNotEmpty ? _fullName : 'Not set',
                       iconColor: const Color(0xFF8B5CF6),
                     ),
                     _buildDivider(),
                     _buildProfileInfoTile(
                       icon: Icons.phone_outlined,
                       label: 'Phone',
-                      value: _phone, // ✅ Dynamic
+                      value: _phone.isNotEmpty ? _phone : 'Not set',
                       iconColor: const Color(0xFF10B981),
                     ),
                     _buildDivider(),
                     _buildProfileInfoTile(
                       icon: Icons.email_outlined,
                       label: 'Email',
-                      value: _email, // ✅ Dynamic
+                      value: _email.isNotEmpty ? _email : 'Not set',
                       iconColor: const Color(0xFF3B82F6),
                     ),
                     _buildDivider(),
                     _buildProfileInfoTile(
                       icon: Icons.location_on_outlined,
                       label: 'City',
-                      value: _city, // ✅ Dynamic
+                      value: _city.isNotEmpty ? _city : 'Not set',
                       iconColor: const Color(0xFFEF4444),
                     ),
                   ]),
                   const SizedBox(height: 20),
 
-                  // Preferences Section
+                  // ✅ Preferences Section
                   _buildSectionTitle('Preferences'),
                   const SizedBox(height: 8),
                   _buildSettingsCard([
-                    // Currency Dropdown
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -878,7 +939,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ]),
                   const SizedBox(height: 20),
 
-                  // Support Section
+                  // ✅ Support Section
                   _buildSectionTitle('Support'),
                   const SizedBox(height: 8),
                   _buildSettingsCard([
@@ -919,7 +980,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ]),
                   const SizedBox(height: 20),
 
-                  // Danger Zone
+                  // ✅ Danger Zone
                   _buildSectionTitle('Danger Zone'),
                   const SizedBox(height: 8),
                   _buildSettingsCard([
@@ -933,7 +994,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ]),
                   const SizedBox(height: 24),
 
-                  // Sign Out Button
+                  // ✅ Sign Out Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -964,7 +1025,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   const SizedBox(height: 8),
                   const Center(
                     child: Text(
-                      'Madad v1.0.0 • Made with ❤️ in India',
+                      'QuickLoan v1.0.0 • Made with ❤️ in India',
                       style: TextStyle(
                         fontSize: 12,
                         color: Color(0xFF9CA3AF),
@@ -981,6 +1042,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
+  // ✅ Profile Header
   Widget _buildProfileHeader(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -1025,8 +1087,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     ),
                   ),
                   const Spacer(),
-
-                  // ✅ Edit Button - Now works!
                   GestureDetector(
                     onTap: _showEditProfileSheet,
                     child: Container(
@@ -1046,7 +1106,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ✅ Avatar - Shows updated letter
+              // ✅ Avatar
               Stack(
                 alignment: Alignment.bottomRight,
                 children: [
@@ -1072,7 +1132,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          _avatarLetter, // ✅ Dynamic
+                          _avatarLetter,
                           style: const TextStyle(
                             fontSize: 36,
                             fontWeight: FontWeight.bold,
@@ -1088,10 +1148,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFF10B981),
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
                     child: const Icon(
                       Icons.check,
@@ -1103,9 +1160,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ),
               const SizedBox(height: 14),
 
-              // ✅ Dynamic Name & Email
+              // ✅ Dynamic Name & Email from login
               Text(
-                _fullName,
+                _fullName.isNotEmpty ? _fullName : 'Welcome',
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -1114,7 +1171,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                _email,
+                _email.isNotEmpty ? _email : 'No email set',
                 style: const TextStyle(
                   fontSize: 13,
                   color: Colors.white70,
@@ -1380,7 +1437,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         content: const Text(
-          'Are you sure you want to sign out of Madad?',
+          'Are you sure you want to sign out of QuickLoan?',
           style: TextStyle(color: Color(0xFF6B7280)),
         ),
         actions: [

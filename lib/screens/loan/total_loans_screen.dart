@@ -1,7 +1,14 @@
+// lib/screens/loan/total_loans_screen.dart
 import 'package:flutter/material.dart';
 
 class TotalLoansScreen extends StatefulWidget {
-  const TotalLoansScreen({Key? key}) : super(key: key);
+  // ✅ Accept userName from HomeScreen
+  final String userName;
+
+  const TotalLoansScreen({
+    Key? key,
+    this.userName = '',
+  }) : super(key: key);
 
   @override
   State<TotalLoansScreen> createState() => _TotalLoansScreenState();
@@ -20,21 +27,52 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
     'Vehicle',
   ];
 
-  // ✅ Aryan's data only
   static const _purpleColor = Color(0xFF8B5CF6);
   static const _blueColor = Color(0xFF3B82F6);
+
+  // ✅ Resolve display name from userName (handles email or full name)
+  String get _displayName {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return 'User';
+
+    // If it's an email, extract and format local part
+    if (input.contains('@')) {
+      final localPart = input.split('@').first;
+      return localPart
+          .split(RegExp(r'[._]'))
+          .map(
+            (w) => w.isNotEmpty
+                ? w[0].toUpperCase() + w.substring(1).toLowerCase()
+                : '',
+          )
+          .join(' ');
+    }
+
+    // Otherwise return as-is (already a proper name)
+    final firstWord = input.split(' ').first;
+    return firstWord[0].toUpperCase() + firstWord.substring(1);
+  }
+
+  // ✅ Resolve avatar letter
+  String get _avatarLetter {
+    final input = widget.userName.trim();
+    if (input.isEmpty) return 'U';
+    if (input.contains('@')) {
+      return input.split('@').first[0].toUpperCase();
+    }
+    return input[0].toUpperCase();
+  }
 
   late final List<Map<String, dynamic>> _loans = [
     {
       'id': 'LN-ARY-001',
-      'borrower': 'Aryan Pawar', // ✅ Aryan's loan (Money Lent)
       'loanTo': 'Rohan Mehta',
       'type': 'Personal',
       'category': 'Lent',
       'amount': 25000,
       'date': '10 Feb 2024',
       'status': 'Active',
-      'avatar': 'A',
+      'avatar': 'R',
       'avatarColor': _purpleColor,
       'emi': 2200,
       'tenure': '12 months',
@@ -44,14 +82,13 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
     },
     {
       'id': 'LN-ARY-002',
-      'borrower': 'Aryan Pawar', // ✅ Aryan's loan (Money Borrowed)
       'loanTo': 'HDFC Bank',
       'type': 'Home',
       'category': 'Borrowed',
       'amount': 1500000,
       'date': '15 Jan 2024',
       'status': 'Active',
-      'avatar': 'A',
+      'avatar': 'H',
       'avatarColor': _blueColor,
       'emi': 14500,
       'tenure': '120 months',
@@ -61,14 +98,13 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
     },
     {
       'id': 'LN-ARY-003',
-      'borrower': 'Aryan Pawar', // ✅ Aryan's loan (Money Lent)
       'loanTo': 'Sneha Kulkarni',
       'type': 'Personal',
       'category': 'Lent',
       'amount': 10000,
       'date': '05 Dec 2023',
       'status': 'Closed',
-      'avatar': 'A',
+      'avatar': 'S',
       'avatarColor': _purpleColor,
       'emi': 5000,
       'tenure': '2 months',
@@ -78,14 +114,13 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
     },
     {
       'id': 'LN-ARY-004',
-      'borrower': 'Aryan Pawar', // ✅ Aryan's loan (Money Borrowed)
       'loanTo': 'Vijay Finance',
       'type': 'Vehicle',
       'category': 'Borrowed',
       'amount': 120000,
       'date': '20 Mar 2024',
       'status': 'Overdue',
-      'avatar': 'A',
+      'avatar': 'V',
       'avatarColor': _purpleColor,
       'emi': 6500,
       'tenure': '24 months',
@@ -165,7 +200,7 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
       ),
       body: Column(
         children: [
-          // ✅ Aryan's Profile Header
+          // ✅ Dynamic User Profile Header
           Container(
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(20),
@@ -179,35 +214,37 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
             ),
             child: Column(
               children: [
-                // Profile Row
-                const Row(
+                // ✅ Dynamic Profile Row
+                Row(
                   children: [
+                    // ✅ Dynamic Avatar
                     CircleAvatar(
                       backgroundColor: Colors.white,
                       radius: 24,
                       child: Text(
-                        'A',
-                        style: TextStyle(
+                        _avatarLetter,
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF8B5CF6),
                         ),
                       ),
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // ✅ Dynamic Display Name
                           Text(
-                            'Aryan Pawar',
-                            style: TextStyle(
+                            _displayName,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
-                          Text(
+                          const Text(
                             'My Loan Portfolio',
                             style: TextStyle(
                               fontSize: 13,
@@ -225,7 +262,8 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
                   color: Colors.white.withValues(alpha: 0.3),
                 ),
                 const SizedBox(height: 16),
-                // Stats
+
+                // ✅ Stats Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -258,7 +296,7 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
             ),
           ),
 
-          // Filter Chips
+          // ✅ Filter Chips
           SizedBox(
             height: 44,
             child: ListView.builder(
@@ -303,7 +341,7 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
           ),
           const SizedBox(height: 16),
 
-          // Tabs Content
+          // ✅ Tabs Content
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -392,7 +430,7 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Category Badge
+          // ✅ Category Badge + Loan ID Row
           Row(
             children: [
               Container(
@@ -444,7 +482,7 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
           ),
           const SizedBox(height: 12),
 
-          // Main Info Row
+          // ✅ Main Info Row — Avatar with loanTo first letter
           Row(
             children: [
               CircleAvatar(
@@ -526,7 +564,7 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
           ),
           const SizedBox(height: 12),
 
-          // Note
+          // ✅ Note
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -555,7 +593,7 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
           ),
           const SizedBox(height: 12),
 
-          // Progress
+          // ✅ Progress Bar
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -591,6 +629,8 @@ class _TotalLoansScreenState extends State<TotalLoansScreen>
             ],
           ),
           const SizedBox(height: 10),
+
+          // ✅ View Details Link
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
