@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/loan_application.dart';
-import '../utils/constants.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/loan_type_card.dart';
-import '../widgets/progress_indicator_widget.dart';
+import '../../models/loan_application.dart';
+import '../../utils/constants.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/loan_type_card.dart';
+import '../../widgets/progress_indicator_widget.dart';
 import 'basic_details_screen.dart';
 
 class LoanTypeScreen extends StatefulWidget {

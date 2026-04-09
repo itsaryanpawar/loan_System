@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'chat_document_screen.dart';
+import '../communication/chat_document_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   const ProfileSettingsScreen({Key? key}) : super(key: key);

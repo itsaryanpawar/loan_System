@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/loan_application.dart';
-import '../utils/constants.dart';
-import '../utils/validators.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_text_field.dart';
-import '../widgets/progress_indicator_widget.dart';
+import '../../models/loan_application.dart';
+import '../../utils/constants.dart';
+import '../../utils/validators.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/custom_text_field.dart';
+import '../../widgets/progress_indicator_widget.dart';
 import 'financial_details_screen.dart';
 
 class BasicDetailsScreen extends StatefulWidget {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/loan_application.dart';
-import '../services/api_service.dart';
-import '../utils/constants.dart';
+import '../../models/loan_application.dart';
+import '../../services/api_service.dart';
+import '../../utils/constants.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);

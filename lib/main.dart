@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/home_screen.dart';
-import 'screens/admin_dashboard_screen.dart';
+import 'screens/dashboard/home_screen.dart';
+import 'screens/dashboard/admin_dashboard_screen.dart';
 import 'utils/constants.dart';
 
 void main() {

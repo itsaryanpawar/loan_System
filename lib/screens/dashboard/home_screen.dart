@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'emi_calculator_screen.dart';
-import 'loan_type_screen.dart';
-import 'total_loans_screen.dart';
-import 'active_loans_screen.dart';
-import 'disbursed_amount_screen.dart';
-import 'outstanding_balance_screen.dart';
-import 'profile_settings_screen.dart';
-import 'chat_document_screen.dart';
-import 'notification_screen.dart';
-import '../models/loan_application.dart';
-import 'contacts_screen.dart';
+import '../eligibility/emi_calculator_screen.dart';
+import '../loan/loan_type_screen.dart';
+import '../loan/total_loans_screen.dart';
+import '../loan/active_loans_screen.dart';
+import '../loan/disbursed_amount_screen.dart';
+import '../loan/outstanding_balance_screen.dart';
+import '../user/profile_settings_screen.dart';
+import '../communication/chat_document_screen.dart';
+import '../communication/notification_screen.dart';
+import '../../models/loan_application.dart';
+import '../contacts/contacts_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);

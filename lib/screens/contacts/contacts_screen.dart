@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'notification_screen.dart';
-import 'profile_settings_screen.dart';
-import 'emi_calculator_screen.dart';
-import 'loan_type_screen.dart';
-import '../models/loan_application.dart';
+import '../communication/notification_screen.dart';
+import '../user/profile_settings_screen.dart';
+import '../eligibility/emi_calculator_screen.dart';
+import '../loan/loan_type_screen.dart';
+import '../../models/loan_application.dart';
 
 class ContactsScreen extends StatefulWidget {
   const ContactsScreen({Key? key}) : super(key: key);

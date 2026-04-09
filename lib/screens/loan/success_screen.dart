@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/loan_application.dart';
-import '../utils/constants.dart';
-import '../widgets/custom_button.dart';
-import 'home_screen.dart';
+import '../../models/loan_application.dart';
+import '../../utils/constants.dart';
+import '../../widgets/custom_button.dart';
+import '../dashboard/home_screen.dart';
 
 class SuccessScreen extends StatelessWidget {
   final LoanApplication application;

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../models/loan_application.dart';
-import '../utils/constants.dart';
-import '../utils/validators.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_text_field.dart';
-import '../widgets/progress_indicator_widget.dart';
-import 'eligibility_result_screen.dart';
-import '../services/api_service.dart';
+import '../../models/loan_application.dart';
+import '../../utils/constants.dart';
+import '../../utils/validators.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/custom_text_field.dart';
+import '../../widgets/progress_indicator_widget.dart';
+import '../eligibility/eligibility_result_screen.dart';
+import '../../services/api_service.dart';
 
 class FinancialDetailsScreen extends StatefulWidget {
   final LoanApplication application;

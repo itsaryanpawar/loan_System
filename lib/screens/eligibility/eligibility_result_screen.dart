@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/loan_application.dart';
-import '../utils/constants.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/progress_indicator_widget.dart';
-import 'success_screen.dart';
-import '../services/api_service.dart';
+import '../../models/loan_application.dart';
+import '../../utils/constants.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/progress_indicator_widget.dart';
+import '../loan/success_screen.dart';
+import '../../services/api_service.dart';
 
 class EligibilityResultScreen extends StatelessWidget {
   final LoanApplication application;
