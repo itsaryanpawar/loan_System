@@ -25,6 +25,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   Future<void> _loadApplications() async {
     setState(() => _isLoading = true);
     final applications = await _apiService.getAllApplications();
+
+    // ✅ Fix 1: Check mounted after async gap
+    if (!mounted) return;
+
     setState(() {
       _applications = applications;
       _isLoading = false;
@@ -65,6 +69,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 child: const Text('Clear All Data'),
                 onTap: () async {
                   await Future.delayed(Duration.zero);
+                  // ✅ Fix 2: Check mounted before using context
+                  if (!mounted) return;
                   _showClearDataDialog();
                 },
               ),
@@ -177,7 +183,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _applications.length,
                           itemBuilder: (context, index) {
-                            return _buildApplicationCard(_applications[index]);
+                            return _buildApplicationCard(
+                              _applications[index],
+                            );
                           },
                         ),
                     ],
@@ -189,7 +197,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Widget _buildStatCard(
-      String title, String value, IconData icon, Color color) {
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -299,9 +311,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                _buildDetailRow(Icons.phone, 'Phone', app.phoneNumber ?? 'N/A'),
+                _buildDetailRow(
+                  Icons.phone,
+                  'Phone',
+                  app.phoneNumber ?? 'N/A',
+                ),
                 const SizedBox(height: 12),
-                _buildDetailRow(Icons.location_city, 'City', app.city ?? 'N/A'),
+                _buildDetailRow(
+                  Icons.location_city,
+                  'City',
+                  app.city ?? 'N/A',
+                ),
                 const SizedBox(height: 12),
                 _buildDetailRow(
                   Icons.currency_rupee,
@@ -340,12 +360,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label,
-                  style: const TextStyle(color: AppColors.textSecondary)),
-              Text(value,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary)),
+              Text(
+                label,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ],
           ),
         ),
@@ -366,23 +391,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   void _showClearDataDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Clear All Data?'),
         content: const Text(
           'This will permanently delete all loan applications.',
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
+            // ✅ Fix 3: Use dialogContext instead of outer context
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () async {
               await _apiService.clearAllApplications();
-              Navigator.pop(context);
+
+              // ✅ Fix 4: Check mounted before using context after await
+              if (!mounted) return;
+
+              // ✅ Fix 5: Use dialogContext to pop dialog safely
+              Navigator.pop(dialogContext);
+
+              // ✅ Fix 6: Reload after dialog closes
               _loadApplications();
             },
-            child: const Text('Clear All',
-                style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Clear All',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
