@@ -1,16 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
+
 import 'screens/dashboard/admin_dashboard_screen.dart';
-import 'screens/auth/login_screen.dart'; // ← Add this import
+import 'screens/auth/login_screen.dart';
 import 'utils/constants.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ Initialize Back4App (Parse)
+  await Parse().initialize(
+    '0tmAfdB7qAFm84qBsLcrFOLXszVlxBmEGzZ0Jux5',
+    'https://parseapi.back4app.com',
+    clientKey: 'HgLs3O0voG6m7bKqAZdxKuK3xqQfthuFb7E855F4',
+    debug: true,
+  );
+
+  // ✅ Lock orientation
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
+  // ✅ Run App
   runApp(const MyApp());
 }
 
@@ -35,12 +49,12 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
 
-      // ✅ Login Page comes FIRST
+      // ✅ Start from Login
       initialRoute: '/login',
 
       routes: {
-        '/login': (context) => const LoginScreen(), // ← First Screen
-        '/admin': (context) => const AdminDashboardScreen(), // ← Admin Home
+        '/login': (context) => const LoginScreen(),
+        '/admin': (context) => const AdminDashboardScreen(),
       },
     );
   }

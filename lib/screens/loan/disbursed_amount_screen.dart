@@ -424,7 +424,7 @@ class _DisbursedAmountScreenState extends State<DisbursedAmountScreen> {
                 children: [
                   // ✅ Dynamic name in chart title
                   Text(
-                    "${_firstName}'s Monthly Activity",
+                    "$_firstName's Monthly Activity",
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
