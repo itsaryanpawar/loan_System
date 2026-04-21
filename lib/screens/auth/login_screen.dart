@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:loan_lead_app/services/auth_service.dart';
+import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 import 'package:loan_lead_app/screens/dashboard/home_screen.dart';
 import 'package:loan_lead_app/screens/auth/signupscreen.dart';
 
@@ -27,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // ─── Handle Login ─────────────────────────────────────────
+  // ─── LOGIN FUNCTION ───────────────────────────────────────
   Future<void> _handleLogin() async {
     if (_emailController.text.trim().isEmpty ||
         _passwordController.text.isEmpty) {
@@ -40,30 +40,70 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = '';
     });
 
-    final result = await AuthService.login(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      role: _isUserTab ? 'user' : 'admin',
-    );
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    if (result['success']) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => HomeScreen(
-            userName: result['userName'] ?? 'User',
-          ),
-        ),
+    try {
+      final user = ParseUser(
+        _emailController.text.trim(),
+        _passwordController.text,
+        _emailController.text.trim(),
       );
-    } else {
-      setState(() => _errorMessage = result['message']);
+
+      final response = await user.login();
+
+      if (!mounted) return;
+
+      if (response.success) {
+        final ParseUser? loggedInUser =
+            await ParseUser.currentUser() as ParseUser?;
+
+        if (loggedInUser != null) {
+          // ✅ Generate Full Name if not exists
+          final existingName = loggedInUser.get<String>('fullName') ?? '';
+
+          if (existingName.isEmpty) {
+            final rawUsername = loggedInUser.username ?? '';
+            String derivedName = '';
+
+            if (rawUsername.contains('@')) {
+              final localPart = rawUsername.split('@').first;
+
+              derivedName = localPart
+                  .split(RegExp(r'[._]'))
+                  .map((w) => w.isNotEmpty
+                      ? w[0].toUpperCase() + w.substring(1).toLowerCase()
+                      : '')
+                  .join(' ');
+            } else {
+              derivedName = rawUsername;
+            }
+
+            loggedInUser.set<String>('fullName', derivedName);
+            await loggedInUser.save();
+          }
+
+          // ✅ Navigate to Home
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HomeScreen(
+                userName: loggedInUser.get<String>('fullName') ??
+                    loggedInUser.username ??
+                    'User',
+              ),
+            ),
+          );
+        }
+      } else {
+        setState(
+            () => _errorMessage = response.error?.message ?? 'Login failed');
+      }
+    } catch (e) {
+      setState(() => _errorMessage = 'Something went wrong');
     }
+
+    setState(() => _isLoading = false);
   }
 
-  // ─── Navigate to Sign Up ──────────────────────────────────
+  // ─── NAVIGATE TO SIGNUP ──────────────────────────────────
   void _goToSignUp() {
     Navigator.push(
       context,
@@ -71,13 +111,13 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─── BUILD ────────────────────────────────────────────────
+  // ─── UI BUILD ────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
-          // ── Header ──────────────────────────────────────────
+          // ── HEADER ──
           Container(
             width: double.infinity,
             height: 220,
@@ -103,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-          // ── Body ────────────────────────────────────────────
+          // ── BODY ──
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -121,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 24),
 
-                  // ── User / Admin Tabs ──
+                  // ── TABS ──
                   Row(
                     children: [
                       _tabButton(
@@ -140,53 +180,43 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 24),
 
-                  // ── Email ──
-                  const Text(
-                    'Email Address',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  // ── EMAIL ──
+                  const Text('Email Address',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
                     decoration: _inputDecoration(
-                      'Enter your email',
-                      Icons.email_outlined,
-                    ),
+                        'Enter your email', Icons.email_outlined),
                   ),
 
                   const SizedBox(height: 16),
 
-                  // ── Password ──
-                  const Text(
-                    'Password',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  // ── PASSWORD ──
+                  const Text('Password',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: _inputDecoration(
-                      'Enter your password',
-                      Icons.lock_outline,
-                    ).copyWith(
+                            'Enter your password', Icons.lock_outline)
+                        .copyWith(
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscurePassword
                               ? Icons.visibility_off
                               : Icons.visibility,
-                          color: Colors.grey,
                         ),
                         onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
-                        ),
+                            () => _obscurePassword = !_obscurePassword),
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 8),
 
-                  // ── Remember Me + Forgot Password ──
+                  // ── REMEMBER + FORGOT ──
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -211,39 +241,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
 
-                  // ── Error Message ──
+                  // ── ERROR ──
                   if (_errorMessage.isNotEmpty) ...[
                     Container(
-                      width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.red.shade50,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
                       ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            color: Colors.red,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _errorMessage,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        _errorMessage,
+                        style: const TextStyle(color: Colors.red),
                       ),
                     ),
                     const SizedBox(height: 12),
                   ],
 
-                  const SizedBox(height: 4),
-
-                  // ── Sign In Button ──
+                  // ── LOGIN BUTTON ──
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -251,109 +265,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _isLoading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6C63FF),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              'Sign In',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('Sign In'),
                     ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  // ── Divider ──
-                  Row(
-                    children: [
-                      const Expanded(child: Divider(thickness: 1)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          'OR',
-                          style: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const Expanded(child: Divider(thickness: 1)),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // ✅ ── Create Account Button ──
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: OutlinedButton.icon(
-                      onPressed: _goToSignUp,
-                      icon: const Icon(
-                        Icons.person_add_outlined,
-                        color: Color(0xFF6C63FF),
-                      ),
-                      label: const Text(
-                        'Create New Account',
-                        style: TextStyle(
-                          color: Color(0xFF6C63FF),
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(
-                          color: Color(0xFF6C63FF),
-                          width: 1.5,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // ── Already have account hint ──
+                  // ── SIGNUP ──
                   Center(
-                    child: RichText(
-                      text: TextSpan(
-                        style: const TextStyle(color: Colors.grey),
-                        children: [
-                          const TextSpan(text: "Don't have an account? "),
-                          WidgetSpan(
-                            child: GestureDetector(
-                              onTap: _goToSignUp,
-                              child: const Text(
-                                'Sign Up',
-                                style: TextStyle(
-                                  color: Color(0xFF6C63FF),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: TextButton(
+                      onPressed: _goToSignUp,
+                      child: const Text("Create New Account"),
                     ),
                   ),
-
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -363,31 +290,27 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─── Tab Button ───────────────────────────────────────────
+  // ─── TAB BUTTON ──
   Widget _tabButton(String label, bool active, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF6C63FF) : Colors.grey.shade100,
+          color: active ? const Color(0xFF6C63FF) : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: active ? const Color(0xFF6C63FF) : Colors.grey.shade300,
-          ),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: active ? Colors.white : Colors.grey,
-            fontWeight: active ? FontWeight.bold : FontWeight.normal,
           ),
         ),
       ),
     );
   }
 
-  // ─── Input Decoration ─────────────────────────────────────
+  // ─── INPUT STYLE ──
   InputDecoration _inputDecoration(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
@@ -397,13 +320,6 @@ class _LoginScreenState extends State<LoginScreen> {
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: Color(0xFF6C63FF),
-          width: 1.5,
-        ),
       ),
     );
   }

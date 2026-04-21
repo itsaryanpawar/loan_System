@@ -1,9 +1,10 @@
 // lib/screens/user/profile_settings_screen.dart
 import 'package:flutter/material.dart';
+import 'package:parse_server_sdk_flutter/parse_server_sdk_flutter.dart';
 import '../communication/chat_document_screen.dart';
+import '../auth/login_screen.dart'; // ✅ for logout navigation
 
 class ProfileSettingsScreen extends StatefulWidget {
-  // ✅ Accept data passed from Login → HomeScreen → ProfileSettings
   final String userName;
   final String userEmail;
 
@@ -22,13 +23,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   bool _notificationsEnabled = true;
   bool _biometricEnabled = false;
   bool _darkModeEnabled = false;
+  bool _isLoading = true; // ✅ Loading state while fetching from Back4App
 
-  // ✅ User data — initialized from login in initState
   late String _fullName;
   late String _email;
   late String _avatarLetter;
   String _phone = '';
   String _city = '';
+
+  // ✅ Back4App current user
+  ParseUser? _currentUser;
 
   final List<String> _currencies = [
     '₹ Indian Rupee',
@@ -43,21 +47,128 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // ✅ Auto-fill from login data
+    // Set fallback values first (from login screen params)
     _email = widget.userEmail.isNotEmpty ? widget.userEmail : '';
     _fullName = _resolveFullName();
     _avatarLetter = _resolveAvatarLetter();
+
+    // ✅ Then fetch fresh data from Back4App
+    _fetchUserFromBack4App();
   }
 
-  // ✅ Resolve display name from userName (handles email or full name)
+  // ✅ Fetch current logged-in user data from Back4App
+  Future<void> _fetchUserFromBack4App() async {
+    try {
+      // Gets the current session user from Back4App
+      final ParseUser? user = await ParseUser.currentUser() as ParseUser?;
+
+      if (user != null) {
+        // ✅ Fetch latest data from server (not just local cache)
+        await user.fetch();
+
+        setState(() {
+          _currentUser = user;
+
+          // ✅ Pull fields from Back4App user object
+          // 'fullName' is a custom column you add in Back4App dashboard
+          final backendName = user.get<String>('fullName') ?? '';
+          final backendPhone = user.get<String>('phone') ?? '';
+          final backendCity = user.get<String>('city') ?? '';
+          final backendEmail = user.emailAddress ?? '';
+
+          // Use backend data if available, else fallback to login params
+          _fullName = backendName.isNotEmpty ? backendName : _resolveFullName();
+          _phone = backendPhone;
+          _city = backendCity;
+          _email = backendEmail.isNotEmpty ? backendEmail : widget.userEmail;
+          _avatarLetter = _resolveAvatarLetterFromName(_fullName);
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      // If fetch fails, use the data passed from login
+      debugPrint('Back4App fetch error: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // ✅ Save updated profile back to Back4App
+  Future<void> _saveProfileToBack4App({
+    required String fullName,
+    required String phone,
+    required String email,
+    required String city,
+  }) async {
+    try {
+      final ParseUser? user = await ParseUser.currentUser() as ParseUser?;
+
+      if (user != null) {
+        // ✅ Update Back4App user fields
+        // Make sure these columns exist in your Back4App User class dashboard
+        user.set<String>('fullName', fullName);
+        user.set<String>('phone', phone);
+        user.set<String>('city', city);
+
+        // ✅ Email update — Back4App uses emailAddress field
+        if (email != user.emailAddress) {
+          user.emailAddress = email;
+          user.username = email; // username = email in most setups
+        }
+
+        // ✅ Save to Back4App server
+        final ParseResponse response = await user.save();
+
+        if (response.success) {
+          debugPrint('✅ Profile saved to Back4App successfully');
+        } else {
+          debugPrint('❌ Save failed: ${response.error?.message}');
+          // Show error to user
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Save failed: ${response.error?.message ?? "Unknown error"}',
+                ),
+                backgroundColor: const Color(0xFFEF4444),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                margin: const EdgeInsets.all(16),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Back4App save error: $e');
+    }
+  }
+
+  // ✅ Logout from Back4App session
+  Future<void> _logoutFromBack4App() async {
+    try {
+      final ParseUser? user = await ParseUser.currentUser() as ParseUser?;
+      if (user != null) {
+        final ParseResponse response = await user.logout();
+        if (response.success) {
+          debugPrint('✅ Logged out from Back4App');
+        } else {
+          debugPrint('❌ Logout error: ${response.error?.message}');
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Logout exception: $e');
+    }
+  }
+
   String _resolveFullName() {
     final input = widget.userName.trim();
     if (input.isEmpty) return '';
-
-    // If it's an email, extract local part before '@'
     if (input.contains('@')) {
       final localPart = input.split('@').first;
-      // Capitalize each word split by dot/underscore
       return localPart
           .split(RegExp(r'[._]'))
           .map((w) => w.isNotEmpty
@@ -65,20 +176,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               : '')
           .join(' ');
     }
-
-    // Otherwise return as-is (already a proper name)
     return input;
   }
 
-  // ✅ Resolve avatar letter
   String _resolveAvatarLetter() {
     final input = widget.userName.trim();
     if (input.isEmpty) return 'U';
-
-    if (input.contains('@')) {
-      return input.split('@').first[0].toUpperCase();
-    }
+    if (input.contains('@')) return input.split('@').first[0].toUpperCase();
     return input[0].toUpperCase();
+  }
+
+  // ✅ Resolve avatar from actual saved name
+  String _resolveAvatarLetterFromName(String name) {
+    if (name.trim().isEmpty) return _resolveAvatarLetter();
+    return name.trim()[0].toUpperCase();
   }
 
   // ✅ Show Edit Profile Bottom Sheet
@@ -89,6 +200,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     final cityController = TextEditingController(text: _city);
     final formKey = GlobalKey<FormState>();
     String selectedAvatar = _avatarLetter;
+    bool isSaving = false; // ✅ Track saving state
 
     showModalBottomSheet(
       context: context,
@@ -108,7 +220,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ),
               child: Column(
                 children: [
-                  // ✅ Sheet Handle
                   Container(
                     margin: const EdgeInsets.only(top: 12),
                     width: 40,
@@ -118,8 +229,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-
-                  // ✅ Header
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                     child: Row(
@@ -151,8 +260,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       ],
                     ),
                   ),
-
-                  // ✅ Scrollable Form Content
                   Expanded(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -162,7 +269,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ✅ Avatar Picker
+                            // Avatar Picker
                             Center(
                               child: Column(
                                 children: [
@@ -175,9 +282,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                             context,
                                             selectedAvatar,
                                             (letter) {
-                                              setSheetState(() {
-                                                selectedAvatar = letter;
-                                              });
+                                              setSheetState(() =>
+                                                  selectedAvatar = letter);
                                             },
                                           );
                                         },
@@ -247,48 +353,44 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             ),
                             const SizedBox(height: 28),
 
-                            // ✅ Login Data Pre-fill Notice
-                            if (widget.userEmail.isNotEmpty ||
-                                widget.userName.isNotEmpty)
-                              Container(
-                                margin: const EdgeInsets.only(bottom: 20),
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
+                            // ✅ Back4App sync notice
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 20),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981)
+                                    .withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
                                   color: const Color(0xFF10B981)
-                                      .withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: const Color(0xFF10B981)
-                                        .withValues(alpha: 0.2),
-                                  ),
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Icon(
-                                      Icons.auto_awesome_rounded,
-                                      size: 18,
-                                      color: Color(0xFF10B981),
-                                    ),
-                                    SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        'Fields are pre-filled from your login. You can update them anytime.',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF10B981),
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                      .withValues(alpha: 0.2),
                                 ),
                               ),
+                              child: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.cloud_sync_rounded,
+                                    size: 18,
+                                    color: Color(0xFF10B981),
+                                  ),
+                                  SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Changes will be saved to your account on Back4App cloud.',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF10B981),
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
 
-                            // ✅ Personal Information Section
                             _buildSheetSectionTitle('Personal Information'),
                             const SizedBox(height: 12),
                             _buildFormCard([
-                              // Full Name
                               _buildFormField(
                                 controller: nameController,
                                 label: 'Full Name',
@@ -306,8 +408,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 },
                               ),
                               _buildFormDivider(),
-
-                              // Phone
                               _buildFormField(
                                 controller: phoneController,
                                 label: 'Phone Number',
@@ -325,8 +425,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 },
                               ),
                               _buildFormDivider(),
-
-                              // Email
                               _buildFormField(
                                 controller: emailController,
                                 label: 'Email Address',
@@ -346,22 +444,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 },
                               ),
                               _buildFormDivider(),
-
-                              // City
                               _buildFormField(
                                 controller: cityController,
                                 label: 'City',
                                 hint: 'e.g. Mumbai, Maharashtra',
                                 icon: Icons.location_on_outlined,
                                 iconColor: const Color(0xFFEF4444),
-                                validator: (val) {
-                                  return null; // optional
-                                },
+                                validator: (val) => null,
                               ),
                             ]),
                             const SizedBox(height: 20),
 
-                            // ✅ Info Note
                             Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
@@ -396,60 +489,102 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             ),
                             const SizedBox(height: 28),
 
-                            // ✅ Save Button
+                            // ✅ Save Button — now calls Back4App save
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton.icon(
-                                onPressed: () {
-                                  if (formKey.currentState!.validate()) {
-                                    setState(() {
-                                      _fullName = nameController.text.trim();
-                                      _phone = phoneController.text.trim();
-                                      _email = emailController.text.trim();
-                                      _city = cityController.text.trim();
-                                      _avatarLetter = selectedAvatar;
-                                    });
-                                    Navigator.pop(sheetContext);
+                                onPressed: isSaving
+                                    ? null // Disable while saving
+                                    : () async {
+                                        if (formKey.currentState!.validate()) {
+                                          // ✅ Show saving state
+                                          setSheetState(() => isSaving = true);
 
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: const Row(
-                                          children: [
-                                            Icon(
-                                              Icons.check_circle_rounded,
-                                              color: Colors.white,
-                                              size: 20,
-                                            ),
-                                            SizedBox(width: 10),
-                                            Text(
-                                              'Profile updated successfully!',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w600,
+                                          final newName =
+                                              nameController.text.trim();
+                                          final newPhone =
+                                              phoneController.text.trim();
+                                          final newEmail =
+                                              emailController.text.trim();
+                                          final newCity =
+                                              cityController.text.trim();
+
+                                          // ✅ Save to Back4App
+                                          await _saveProfileToBack4App(
+                                            fullName: newName,
+                                            phone: newPhone,
+                                            email: newEmail,
+                                            city: newCity,
+                                          );
+
+                                          // ✅ Update local UI state
+                                          setState(() {
+                                            _fullName = newName;
+                                            _phone = newPhone;
+                                            _email = newEmail;
+                                            _city = newCity;
+                                            _avatarLetter = selectedAvatar;
+                                          });
+
+                                          setSheetState(() => isSaving = false);
+                                          Navigator.pop(sheetContext);
+
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: const Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons
+                                                          .check_circle_rounded,
+                                                      color: Colors.white,
+                                                      size: 20,
+                                                    ),
+                                                    SizedBox(width: 10),
+                                                    Text(
+                                                      'Profile saved to cloud!',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                backgroundColor:
+                                                    const Color(0xFF10B981),
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                margin:
+                                                    const EdgeInsets.all(16),
+                                                duration:
+                                                    const Duration(seconds: 3),
                                               ),
-                                            ),
-                                          ],
+                                            );
+                                          }
+                                        }
+                                      },
+                                icon: isSaving
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
                                         ),
-                                        backgroundColor:
-                                            const Color(0xFF10B981),
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        margin: const EdgeInsets.all(16),
-                                        duration: const Duration(seconds: 3),
+                                      )
+                                    : const Icon(
+                                        Icons.save_rounded,
+                                        color: Colors.white,
+                                        size: 20,
                                       ),
-                                    );
-                                  }
-                                },
-                                icon: const Icon(
-                                  Icons.save_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                                label: const Text(
-                                  'Save Changes',
-                                  style: TextStyle(
+                                label: Text(
+                                  isSaving ? 'Saving...' : 'Save Changes',
+                                  style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
@@ -457,6 +592,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF8B5CF6),
+                                  disabledBackgroundColor:
+                                      const Color(0xFF8B5CF6)
+                                          .withValues(alpha: 0.6),
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 16,
                                   ),
@@ -469,18 +607,15 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             ),
                             const SizedBox(height: 12),
 
-                            // ✅ Cancel Button
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton(
                                 onPressed: () => Navigator.pop(sheetContext),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
                                   side: const BorderSide(
-                                    color: Color(0xFFE5E7EB),
-                                  ),
+                                      color: Color(0xFFE5E7EB)),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
@@ -510,7 +645,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
-  // ✅ Avatar Letter Picker Dialog
   void _showAvatarPicker(
     BuildContext context,
     String current,
@@ -544,7 +678,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       'Y',
       'Z',
     ];
-
     final colors = [
       const Color(0xFF8B5CF6),
       const Color(0xFF10B981),
@@ -557,9 +690,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -576,10 +707,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               const SizedBox(height: 6),
               const Text(
                 'Select a letter for your avatar',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF9CA3AF),
-                ),
+                style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
               ),
               const SizedBox(height: 16),
               GridView.builder(
@@ -595,7 +723,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   final letter = letters[index];
                   final isSelected = letter == current;
                   final color = colors[index % colors.length];
-
                   return GestureDetector(
                     onTap: () {
                       onSelect(letter);
@@ -646,7 +773,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
-  // ✅ Form Field Builder
   Widget _buildFormField({
     required TextEditingController controller,
     required String label,
@@ -723,10 +849,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ),
               focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(
-                  color: Color(0xFFEF4444),
-                  width: 1.5,
-                ),
+                borderSide:
+                    const BorderSide(color: Color(0xFFEF4444), width: 1.5),
               ),
               errorStyle: const TextStyle(
                 fontSize: 11,
@@ -779,6 +903,29 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Show loading spinner while fetching from Back4App
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF5F6FA),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Color(0xFF8B5CF6)),
+              SizedBox(height: 16),
+              Text(
+                'Loading your profile...',
+                style: TextStyle(
+                  color: Color(0xFF6B7280),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       body: Column(
@@ -791,7 +938,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ✅ Account Section
                   _buildSectionTitle('Account'),
                   const SizedBox(height: 8),
                   _buildSettingsCard([
@@ -825,7 +971,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ]),
                   const SizedBox(height: 20),
 
-                  // ✅ Preferences Section
                   _buildSectionTitle('Preferences'),
                   const SizedBox(height: 8),
                   _buildSettingsCard([
@@ -870,9 +1015,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFF9FAFB),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFE5E7EB),
-                              ),
+                              border:
+                                  Border.all(color: const Color(0xFFE5E7EB)),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
@@ -895,9 +1039,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                 }).toList(),
                                 onChanged: (value) {
                                   if (value != null) {
-                                    setState(
-                                      () => _selectedCurrency = value,
-                                    );
+                                    setState(() => _selectedCurrency = value);
                                   }
                                 },
                               ),
@@ -939,7 +1081,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ]),
                   const SizedBox(height: 20),
 
-                  // ✅ Support Section
                   _buildSectionTitle('Support'),
                   const SizedBox(height: 8),
                   _buildSettingsCard([
@@ -980,7 +1121,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ]),
                   const SizedBox(height: 20),
 
-                  // ✅ Danger Zone
                   _buildSectionTitle('Danger Zone'),
                   const SizedBox(height: 8),
                   _buildSettingsCard([
@@ -994,7 +1134,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   ]),
                   const SizedBox(height: 24),
 
-                  // ✅ Sign Out Button
+                  // ✅ Sign Out — now calls Back4App logout
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -1026,10 +1166,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   const Center(
                     child: Text(
                       'QuickLoan v1.0.0 • Made with ❤️ in India',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF9CA3AF),
-                      ),
+                      style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -1042,7 +1179,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
-  // ✅ Profile Header
   Widget _buildProfileHeader(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -1059,7 +1195,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
           child: Column(
             children: [
-              // Top Bar
               Row(
                 children: [
                   GestureDetector(
@@ -1105,8 +1240,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // ✅ Avatar
               Stack(
                 alignment: Alignment.bottomRight,
                 children: [
@@ -1150,17 +1283,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
                     ),
-                    child: const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 14,
-                    ),
+                    child:
+                        const Icon(Icons.check, color: Colors.white, size: 14),
                   ),
                 ],
               ),
               const SizedBox(height: 14),
-
-              // ✅ Dynamic Name & Email from login
               Text(
                 _fullName.isNotEmpty ? _fullName : 'Welcome',
                 style: const TextStyle(
@@ -1172,14 +1300,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               const SizedBox(height: 4),
               Text(
                 _email.isNotEmpty ? _email : 'No email set',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Colors.white70,
-                ),
+                style: const TextStyle(fontSize: 13, color: Colors.white70),
               ),
               const SizedBox(height: 16),
-
-              // Stats Row
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -1216,10 +1339,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: Colors.white70),
-        ),
+        Text(label,
+            style: const TextStyle(fontSize: 11, color: Colors.white70)),
       ],
     );
   }
@@ -1418,20 +1539,15 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   }
 
   Widget _buildDivider() {
-    return const Divider(
-      height: 1,
-      indent: 56,
-      color: Color(0xFFF3F4F6),
-    );
+    return const Divider(height: 1, indent: 56, color: Color(0xFFF3F4F6));
   }
 
+  // ✅ Updated Sign Out — actually logs out from Back4App
   void _showSignOutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Sign Out?',
           style: TextStyle(fontWeight: FontWeight.bold),
@@ -1443,13 +1559,27 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Color(0xFF6B7280)),
-            ),
+            child: const Text('Cancel',
+                style: TextStyle(color: Color(0xFF6B7280))),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () async {
+              Navigator.pop(dialogContext); // Close dialog first
+
+              // ✅ Call Back4App logout
+              await _logoutFromBack4App();
+
+              if (mounted) {
+                // ✅ Navigate back to Login and clear all routes
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoginScreen(),
+                  ),
+                  (route) => false, // Remove all previous routes
+                );
+              }
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
               foregroundColor: Colors.white,
@@ -1469,9 +1599,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           '⚠️ Delete Account?',
           style: TextStyle(fontWeight: FontWeight.bold),
@@ -1483,10 +1611,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Color(0xFF6B7280)),
-            ),
+            child: const Text('Cancel',
+                style: TextStyle(color: Color(0xFF6B7280))),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext),
